@@ -35,6 +35,18 @@ final class RedactSensitiveData implements ProcessorInterface
     }
 
     /**
+     * Same key-based redaction for data that is not a log record, such as the
+     * old and new values stored on an audit row (INV-24, INV-18).
+     *
+     * @param  array<array-key, mixed>  $data
+     * @return array<array-key, mixed>
+     */
+    public function redactData(array $data): array
+    {
+        return $this->redact($data);
+    }
+
+    /**
      * @param  array<array-key, mixed>  $data
      * @return array<array-key, mixed>
      */

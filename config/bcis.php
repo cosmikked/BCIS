@@ -25,6 +25,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Authenticated-only routes
+    |--------------------------------------------------------------------------
+    |
+    | Routes any logged-in user may reach without a specific permission, such
+    | as logout and change-my-password. They still need the `auth` middleware.
+    | tests/Feature/Security/InventoryTest.php (TO-08) fails for any route that
+    | has neither a permission check nor a place on one of the two lists.
+    |
+    */
+
+    'authenticated_routes' => [],
+
+    /*
+    |--------------------------------------------------------------------------
     | Seed credentials (Phase 2)
     |--------------------------------------------------------------------------
     |
