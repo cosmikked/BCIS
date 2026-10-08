@@ -1,0 +1,46 @@
+# Laravel
+/vendor
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/storage/logs/*
+!/storage/logs/.gitignore
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+!/storage/framework/**/.gitignore
+/storage/app/*
+!/storage/app/.gitignore
+.env
+.env.*
+!.env.example
+.phpunit.result.cache
+.phpunit.cache
+/.phpstan.cache
+auth.json
+Homestead.json
+Homestead.yaml
+
+# Desktop shell
+/desktop/node_modules
+/desktop/dist
+/desktop/out
+
+# Database files (PostgreSQL only; never commit a database file or dump)
+*.sqlite
+*.sqlite3
+*.db
+*.sql.gz
+*.dump
+*.backup
+
+# Editors and OS
+.idea
+.vscode
+.fleet
+.DS_Store
+Thumbs.db
+*.log
