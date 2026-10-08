@@ -9,11 +9,15 @@ use Illuminate\Database\Seeder;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Phase 1 has no domain tables, so there is nothing to seed yet.
-     * Demo data (PRD section 18) is synthetic only and arrives with Phase 2+.
+     * Demo data (PRD section 18) is synthetic only. Later phases add their
+     * seeders to this list.
      */
     public function run(): void
     {
-        //
+        $this->call([
+            RolePermissionSeeder::class,
+            OwnerSeeder::class,
+            DemoUserSeeder::class,
+        ]);
     }
 }

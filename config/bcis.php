@@ -23,4 +23,22 @@ return [
         'home',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Seed credentials (Phase 2)
+    |--------------------------------------------------------------------------
+    |
+    | Read from the environment so no password lives in the repository. The
+    | Owner is forced to change the initial password at first login. Demo users
+    | exist for the other roles and are never created in production.
+    |
+    */
+
+    'seed' => [
+        'owner_username' => env('OWNER_USERNAME'),
+        'owner_full_name' => env('OWNER_FULL_NAME', 'System Owner'),
+        'owner_initial_password' => env('OWNER_INITIAL_PASSWORD'),
+        'demo_password' => env('SEED_DEMO_PASSWORD'),
+    ],
+
 ];

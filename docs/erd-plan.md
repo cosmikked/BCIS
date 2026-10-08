@@ -28,7 +28,7 @@ These tables support F10 and the audit rule in every other flow.
 
 | Table | Key columns | Notes |
 | --- | --- | --- |
-| `users` | id, username (unique), full\_name, password\_hash, is\_active, must\_change\_password, failed\_attempts, locked\_until, last\_login\_at | Never deleted. Hash is argon2id or bcrypt. |
+| `users` | id, username (unique), full\_name, password\_hash, is\_active, must\_change\_password, failed\_attempts, locked\_until, last\_login\_at | Never deleted. Hash is argon2id (`getAuthPassword()` maps Laravel's password to `password_hash`). Username is unique case-insensitively (index on `lower(username)`). |
 | `roles` | id, code (unique), name | Seeded: Owner, Administrator, Cashier, Collection Supervisor, Auditor, Technician, Viewer. |
 | `permissions` | id, code (unique, e.g. `payment.create`), description | Code checks permissions, never role names. |
 | `role_permissions` | role\_id, permission\_id | Composite primary key. |
@@ -159,7 +159,7 @@ Agreed on 2026-10-09: every default below is adopted. Build the Phase 4 migratio
 
 ## Migration build order
 
-Every schema change is a Drizzle migration. This order lets each phase checkpoint demonstrate working tables.
+Every schema change is a Laravel migration. This order lets each phase checkpoint demonstrate working tables.
 
 | Phase | Migrations to write | Seeds |
 | --- | --- | --- |
