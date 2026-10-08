@@ -1,0 +1,58 @@
+{
+    "name": "bcis-desktop",
+    "version": "1.0.0",
+    "description": "Minimal Electron shell for BCIS. Opens the Laravel server URL in a window and nothing else.",
+    "private": true,
+    "main": "main.js",
+    "author": "BCIS",
+    "license": "UNLICENSED",
+    "scripts": {
+        "start": "electron .",
+        "test": "node --test \"test/*.test.js\"",
+        "lint": "eslint .",
+        "dist": "electron-builder --win nsis",
+        "pack": "electron-builder --dir"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.0.0",
+        "electron": "^38.0.0",
+        "electron-builder": "^26.0.0",
+        "eslint": "^9.0.0",
+        "globals": "^16.0.0"
+    },
+    "build": {
+        "appId": "ph.bukidnon.bcis.desktop",
+        "productName": "BCIS Desktop",
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "main.js",
+            "src/**/*",
+            "offline/**/*",
+            "package.json"
+        ],
+        "extraResources": [
+            {
+                "from": "config.json",
+                "to": "config.json"
+            }
+        ],
+        "win": {
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": [
+                        "x64"
+                    ]
+                }
+            ]
+        },
+        "nsis": {
+            "oneClick": false,
+            "perMachine": false,
+            "allowToChangeInstallationDirectory": true,
+            "artifactName": "BCIS-Desktop-Setup-${version}.${ext}"
+        }
+    }
+}
