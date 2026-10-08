@@ -1,0 +1,72 @@
+@import 'tailwindcss';
+/* Inter is bundled with the app (npm package), never loaded from a CDN. */
+@import '@fontsource-variable/inter';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../views';
+
+/* Design tokens, PRD section 17. Define once here, use as utilities
+   (bg-primary, text-muted, border-line, ...). */
+@theme {
+    --font-sans: 'Inter Variable', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+
+    --color-primary: #0f2747; /* navy */
+    --color-accent: #2563eb;
+    --color-canvas: #f6f8fb;
+    --color-surface: #ffffff;
+    --color-ink: #0f172a; /* text primary */
+    --color-muted: #64748b; /* text secondary */
+    --color-line: #e2e8f0;
+    --color-success: #059669;
+    --color-warning: #d97706;
+    --color-danger: #dc2626;
+}
+
+@layer base {
+    html {
+        font-family: var(--font-sans);
+        font-feature-settings: 'cv11', 'ss01';
+    }
+
+    body {
+        background-color: var(--color-canvas);
+        color: var(--color-ink);
+    }
+}
+
+@layer components {
+    /* Financial values: right-aligned, tabular numerals (PRD 17). */
+    .money {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    /* Status badges always show text, never colour alone (PRD 17, NFR-13). */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        border-radius: 9999px;
+        padding: 0.125rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1rem;
+        border: 1px solid currentColor;
+    }
+    .badge-success { color: var(--color-success); background: #ecfdf5; }
+    .badge-warning { color: var(--color-warning); background: #fffbeb; }
+    .badge-danger { color: var(--color-danger); background: #fef2f2; }
+    .badge-neutral { color: var(--color-muted); background: #f1f5f9; }
+}
+
+/* Printing uses the dedicated print layout without navigation (PRD 17). */
+@media print {
+    body {
+        background: #fff;
+    }
+    .no-print {
+        display: none !important;
+    }
+}
