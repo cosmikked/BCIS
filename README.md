@@ -134,6 +134,14 @@ A minimal Electron window that opens the server address. It holds no business lo
    npm run dist      # Windows installer in desktop/dist
    ```
 
+**If `npm run start` says "Electron failed to install correctly":** npm 12 blocks install scripts unless they are approved. `desktop/package.json` already approves `electron` and `electron-winstaller` under `allowScripts`. If the `dist` folder is still missing after `npm install` (seen with Node 26, where Electron's unzip step exits silently), delete `node_modules/electron`, run `npm install` again, and if needed unpack the cached download by hand:
+
+```
+# PowerShell, from the desktop folder
+Expand-Archive "$env:LOCALAPPDATA\electron\Cache\*\electron-v*-win32-x64.zip" node_modules\electron\dist -Force
+Set-Content node_modules\electron\path.txt electron.exe -NoNewline -Encoding ascii
+```
+
 Behaviour: the page runs with `contextIsolation`, `sandbox` and `webSecurity` on, `nodeIntegration` off and no preload. Navigation and new windows are locked to the server's origin. If the server is unreachable a local page shows the address and a Retry button. Downloads open a Save As dialog. DevTools are disabled in the installed app. Only one window can run at a time.
 
 ### Testing the shell from a second PC
