@@ -77,6 +77,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Account numbers (FR-SUB-001, FR-SUB-007, INV-10)
+    |--------------------------------------------------------------------------
+    |
+    | Numbers are always generated from PostgreSQL sequences: prefix plus a
+    | zero-padded sequence value (PRD assumption 11). Prefixes are configurable
+    | here (or in .env); they are not editable on the settings screen. Unique
+    | indexes are the real duplicate guard.
+    |
+    */
+
+    'account_numbers' => [
+        'subscriber_prefix' => env('SUBSCRIBER_NO_PREFIX', 'SUB-'),
+        'service_prefix' => env('SERVICE_ACCOUNT_NO_PREFIX', 'SVC-'),
+        'digits' => 6,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Seed credentials (Phase 2)
     |--------------------------------------------------------------------------
     |

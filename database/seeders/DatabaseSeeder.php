@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             OwnerSeeder::class,
             DemoUserSeeder::class,
+            CollectionSetupSeeder::class,
+            ServicePlanSeeder::class,
         ]);
     }
 }
