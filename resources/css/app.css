@@ -16,26 +16,154 @@
     --color-canvas: #f6f8fb;
     --color-surface: #ffffff;
     --color-ink: #0f172a; /* text primary */
-    --color-muted: #64748b; /* text secondary */
-    --color-line: #e2e8f0;
+    --color-muted: #475569; /* text secondary, 7.5:1 on white and 6.9:1 on canvas */
+    --color-line: #e2e8f0; /* decorative dividers and card edges only */
+    --color-control: #7c8a9c; /* input and button edges, 3.5:1 on white (WCAG 1.4.11) */
+    --color-selected: #eff6ff;
+
+    /* Status colours. The plain colour is for borders and large marks; the
+       -ink variant is for text on the matching tint (4.5:1 or better). */
     --color-success: #059669;
+    --color-success-ink: #047857;
+    --color-success-tint: #ecfdf5;
     --color-warning: #d97706;
+    --color-warning-ink: #92400e;
+    --color-warning-tint: #fffbeb;
     --color-danger: #dc2626;
+    --color-danger-ink: #b91c1c;
+    --color-danger-tint: #fef2f2;
 }
 
 @layer base {
     html {
         font-family: var(--font-sans);
         font-feature-settings: 'cv11', 'ss01';
+        color-scheme: light;
     }
 
     body {
         background-color: var(--color-canvas);
         color: var(--color-ink);
     }
+
+    /* One visible keyboard focus style everywhere. Dark surfaces get a white ring. */
+    :focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+    .on-dark :focus-visible {
+        outline-color: #fff;
+    }
+
+    ::selection {
+        background-color: color-mix(in oklab, var(--color-accent) 25%, transparent);
+    }
+
+    input[type='checkbox'],
+    input[type='radio'] {
+        width: 1rem;
+        height: 1rem;
+        accent-color: var(--color-accent);
+    }
 }
 
 @layer components {
+    /* Form controls. Edges use --color-control so the field is visible (3:1). */
+    .label {
+        display: block;
+        margin-bottom: 0.25rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--color-ink);
+    }
+    .field {
+        display: block;
+        width: 100%;
+        border: 1px solid var(--color-control);
+        border-radius: 0.375rem;
+        background-color: var(--color-surface);
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        color: var(--color-ink);
+    }
+    .field::placeholder {
+        color: #64748b; /* 4.8:1 on white */
+    }
+    .field:focus {
+        border-color: var(--color-accent);
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+    }
+    .field:disabled {
+        background-color: var(--color-canvas);
+        cursor: not-allowed;
+    }
+    .field-sm {
+        padding: 0.375rem 0.5rem;
+    }
+
+    /* Buttons. One shape, three tones, one compact size. */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border: 1px solid transparent;
+        border-radius: 0.375rem;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.25rem;
+        cursor: pointer;
+        transition: background-color 150ms ease-out, border-color 150ms ease-out;
+    }
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-weight: 500;
+    }
+    .btn-primary {
+        background-color: var(--color-accent);
+        color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) {
+        background-color: #1d4ed8;
+    }
+    .btn-primary:active:not(:disabled) {
+        background-color: #1e40af;
+    }
+    .btn-secondary {
+        border-color: var(--color-control);
+        background-color: var(--color-surface);
+        color: var(--color-ink);
+    }
+    .btn-secondary:hover:not(:disabled) {
+        background-color: var(--color-canvas);
+    }
+    .btn-danger {
+        border-color: var(--color-danger-ink);
+        background-color: var(--color-surface);
+        color: var(--color-danger-ink);
+    }
+    .btn-danger:hover:not(:disabled) {
+        background-color: var(--color-danger-tint);
+    }
+
+    /* Messages. Text uses the -ink colour so it stays readable on the tint. */
+    .alert {
+        border: 1px solid;
+        border-radius: 0.375rem;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    .alert-success { border-color: var(--color-success); background-color: var(--color-success-tint); color: var(--color-success-ink); }
+    .alert-warning { border-color: var(--color-warning); background-color: var(--color-warning-tint); color: var(--color-warning-ink); }
+    .alert-danger { border-color: var(--color-danger); background-color: var(--color-danger-tint); color: var(--color-danger-ink); }
+
     /* Financial values: right-aligned, tabular numerals (PRD 17). */
     .money {
         text-align: right;
@@ -55,10 +183,16 @@
         line-height: 1rem;
         border: 1px solid currentColor;
     }
-    .badge-success { color: var(--color-success); background: #ecfdf5; }
-    .badge-warning { color: var(--color-warning); background: #fffbeb; }
-    .badge-danger { color: var(--color-danger); background: #fef2f2; }
+    .badge-success { color: var(--color-success-ink); background: var(--color-success-tint); }
+    .badge-warning { color: var(--color-warning-ink); background: var(--color-warning-tint); }
+    .badge-danger { color: var(--color-danger-ink); background: var(--color-danger-tint); }
     .badge-neutral { color: var(--color-muted); background: #f1f5f9; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .btn {
+        transition: none;
+    }
 }
 
 /* Printing uses the dedicated print layout without navigation (PRD 17). */

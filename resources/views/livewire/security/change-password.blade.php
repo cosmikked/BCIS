@@ -1,7 +1,7 @@
 <div>
     <h1 class="mb-1 text-lg font-semibold text-ink">Change password</h1>
     @if ($forced)
-        <p class="mb-4 rounded-md border border-warning bg-amber-50 px-3 py-2 text-sm text-warning" role="status">
+        <p class="alert alert-warning mb-4" role="status">
             You are using a temporary password. Choose a new one to continue.
         </p>
     @else
@@ -10,28 +10,24 @@
 
     <form wire:submit="save" class="space-y-4" novalidate>
         <div>
-            <label for="current_password" class="mb-1 block text-sm font-medium text-ink">Current password <span class="text-danger" aria-hidden="true">*</span></label>
-            <input id="current_password" type="password" wire:model="current_password" autocomplete="current-password" required
-                   class="block w-full rounded-md border border-line px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30">
+            <label for="current_password" class="label">Current password <span class="text-danger" aria-hidden="true">*</span></label>
+            <input id="current_password" type="password" wire:model="current_password" autocomplete="current-password" required class="field">
             @error('current_password') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
         </div>
 
         <div>
-            <label for="new_password" class="mb-1 block text-sm font-medium text-ink">New password <span class="text-danger" aria-hidden="true">*</span></label>
-            <input id="new_password" type="password" wire:model="new_password" autocomplete="new-password" required
-                   class="block w-full rounded-md border border-line px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30">
+            <label for="new_password" class="label">New password <span class="text-danger" aria-hidden="true">*</span></label>
+            <input id="new_password" type="password" wire:model="new_password" autocomplete="new-password" required class="field">
             <p class="mt-1 text-xs text-muted">At least {{ $minLength }} characters. It must not contain your username.</p>
             @error('new_password') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
         </div>
 
         <div>
-            <label for="new_password_confirmation" class="mb-1 block text-sm font-medium text-ink">Confirm new password <span class="text-danger" aria-hidden="true">*</span></label>
-            <input id="new_password_confirmation" type="password" wire:model="new_password_confirmation" autocomplete="new-password" required
-                   class="block w-full rounded-md border border-line px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30">
+            <label for="new_password_confirmation" class="label">Confirm new password <span class="text-danger" aria-hidden="true">*</span></label>
+            <input id="new_password_confirmation" type="password" wire:model="new_password_confirmation" autocomplete="new-password" required class="field">
         </div>
 
-        <button type="submit" wire:loading.attr="disabled" wire:target="save"
-                class="w-full rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+        <button type="submit" wire:loading.attr="disabled" wire:target="save" class="btn btn-primary w-full">
             <span wire:loading.remove wire:target="save">Change password</span>
             <span wire:loading wire:target="save">Saving…</span>
         </button>

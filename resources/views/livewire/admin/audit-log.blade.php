@@ -2,17 +2,17 @@
     <form wire:submit="apply" class="grid gap-3 rounded-md border border-line bg-surface p-4 sm:grid-cols-2 lg:grid-cols-6" novalidate>
         <div>
             <label for="f-from" class="mb-1 block text-xs font-medium text-muted">From</label>
-            <input id="f-from" type="date" wire:model="from" class="block w-full rounded-md border border-line px-2 py-1.5 text-sm">
+            <input id="f-from" type="date" wire:model="from" class="field field-sm">
             @error('from') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
         </div>
         <div>
             <label for="f-to" class="mb-1 block text-xs font-medium text-muted">To</label>
-            <input id="f-to" type="date" wire:model="to" class="block w-full rounded-md border border-line px-2 py-1.5 text-sm">
+            <input id="f-to" type="date" wire:model="to" class="field field-sm">
             @error('to') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
         </div>
         <div>
             <label for="f-actor" class="mb-1 block text-xs font-medium text-muted">User</label>
-            <select id="f-actor" wire:model="actorId" class="block w-full rounded-md border border-line px-2 py-1.5 text-sm">
+            <select id="f-actor" wire:model="actorId" class="field field-sm">
                 <option value="">Anyone</option>
                 @foreach ($actors as $actor)
                     <option value="{{ $actor->id }}">{{ $actor->full_name }} ({{ $actor->username }})</option>
@@ -21,7 +21,7 @@
         </div>
         <div>
             <label for="f-action" class="mb-1 block text-xs font-medium text-muted">Event</label>
-            <select id="f-action" wire:model="action" class="block w-full rounded-md border border-line px-2 py-1.5 text-sm">
+            <select id="f-action" wire:model="action" class="field field-sm">
                 <option value="">Any event</option>
                 @foreach ($actions as $name)
                     <option value="{{ $name }}">{{ $name }}</option>
@@ -30,7 +30,7 @@
         </div>
         <div>
             <label for="f-entity" class="mb-1 block text-xs font-medium text-muted">Record type</label>
-            <select id="f-entity" wire:model="entityType" class="block w-full rounded-md border border-line px-2 py-1.5 text-sm">
+            <select id="f-entity" wire:model="entityType" class="field field-sm">
                 <option value="">Any</option>
                 @foreach ($entityTypes as $type)
                     <option value="{{ $type }}">{{ $type }}</option>
@@ -39,11 +39,11 @@
         </div>
         <div>
             <label for="f-request" class="mb-1 block text-xs font-medium text-muted">Request id</label>
-            <input id="f-request" type="text" wire:model="requestId" maxlength="64" class="block w-full rounded-md border border-line px-2 py-1.5 font-mono text-sm">
+            <input id="f-request" type="text" wire:model="requestId" maxlength="64" class="field field-sm font-mono">
         </div>
         <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-6">
-            <button type="submit" wire:loading.attr="disabled" wire:target="apply" class="rounded-md bg-accent px-4 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">Apply filters</button>
-            <button type="button" wire:click="clear" class="rounded-md border border-line px-4 py-1.5 text-sm hover:bg-canvas">Clear</button>
+            <button type="submit" wire:loading.attr="disabled" wire:target="apply" class="btn btn-primary btn-sm">Apply filters</button>
+            <button type="button" wire:click="clear" class="btn btn-secondary btn-sm">Clear</button>
             <span class="ml-auto text-xs text-muted">Read-only. Audit rows cannot be edited or deleted.</span>
         </div>
     </form>
