@@ -20,9 +20,13 @@ return [
     // Landing page for every signed-in user, so it needs no permission.
     ['label' => 'Dashboard', 'route' => 'home', 'permission' => null],
     ['label' => 'Subscribers', 'children' => [
-        ['label' => 'All Subscribers', 'permission' => 'subscriber.view'],
-        ['label' => 'New Subscriber', 'permission' => 'subscriber.manage'],
-        ['label' => 'Service Accounts', 'permission' => 'service.view'],
+        ['label' => 'All Subscribers', 'route' => 'subscribers.index', 'permission' => 'subscriber.view'],
+        ['label' => 'New Subscriber', 'route' => 'subscribers.create', 'permission' => 'subscriber.manage'],
+        // Shows the monthly rate, so it needs subscriber.view. The Technician
+        // (service.view only) gets the operational Services item instead.
+        ['label' => 'Service Accounts', 'route' => 'service-accounts.index', 'permission' => 'subscriber.view'],
+        ['label' => 'Service History', 'route' => 'service-history.index', 'permission' => 'subscriber.view'],
+        ['label' => 'Plans', 'route' => 'plans.index', 'permission' => 'subscriber.view'],
     ]],
     ['label' => 'Billing', 'children' => [
         ['label' => 'Current Billing', 'permission' => 'billing.view'],

@@ -55,8 +55,9 @@ final class PlanInput
         }
 
         $type = ServiceType::query()->findOrFail((int) $data['service_type_id']);
-        $speed = isset($data['speed_mbps']) ? (int) $data['speed_mbps'] : null;
-        $channels = isset($data['channel_count']) ? (int) $data['channel_count'] : null;
+        // A blank form field arrives as '', which must mean "not given", not 0.
+        $speed = self::wholeNumberOrNull($data['speed_mbps'] ?? null);
+        $channels = self::wholeNumberOrNull($data['channel_count'] ?? null);
 
         $needsSpeed = in_array($type->code, ['INTERNET', 'COMBO'], true);
         $needsChannels = in_array($type->code, ['CABLE', 'COMBO'], true);
@@ -80,6 +81,11 @@ final class PlanInput
             'channel_count' => $needsChannels ? $channels : null,
             'description' => $description === '' ? null : $description,
         ];
+    }
+
+    private static function wholeNumberOrNull(mixed $value): ?int
+    {
+        return $value === null || trim((string) $value) === '' ? null : (int) $value;
     }
 
     private static function money(mixed $text, string $field): Money

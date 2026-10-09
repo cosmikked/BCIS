@@ -86,7 +86,8 @@ final class SubscriberInput
         /** @var array<string, mixed> $data */
         $data = $validator->validate();
 
-        $areaId = isset($data['collection_area_id']) ? (int) $data['collection_area_id'] : null;
+        // A blank select arrives as '', which must mean "none", never id 0.
+        $areaId = self::intOrNull($data['collection_area_id'] ?? null);
 
         $contacts = [];
         $primarySeen = false;
@@ -99,7 +100,7 @@ final class SubscriberInput
             $primarySeen = $primarySeen || $primary;
 
             $contacts[] = [
-                'id' => isset($row['id']) ? (int) $row['id'] : null,
+                'id' => self::intOrNull($row['id'] ?? null),
                 'contact_type' => $type,
                 'value' => ContactNormalizer::canonical($type, (string) $row['value']),
                 'is_primary' => $primary,
@@ -115,14 +116,14 @@ final class SubscriberInput
         $rawAddresses = array_values($data['addresses']);
         foreach ($rawAddresses as $row) {
             $addresses[] = [
-                'id' => isset($row['id']) ? (int) $row['id'] : null,
+                'id' => self::intOrNull($row['id'] ?? null),
                 'address_type' => AddressType::from((string) $row['address_type']),
                 'line1' => trim((string) $row['line1']),
                 'barangay' => self::blankToNull($row['barangay'] ?? null),
                 'city' => trim((string) $row['city']),
                 'landmark' => self::blankToNull($row['landmark'] ?? null),
                 // An address without its own area belongs to the subscriber's.
-                'collection_area_id' => isset($row['collection_area_id']) ? (int) $row['collection_area_id'] : $areaId,
+                'collection_area_id' => self::intOrNull($row['collection_area_id'] ?? null) ?? $areaId,
             ];
         }
 
@@ -141,6 +142,11 @@ final class SubscriberInput
         $length = strlen(ContactNormalizer::phoneDigits($value));
 
         return $length >= 7 && $length <= 15 ? null : 'Enter a phone number with 7 to 15 digits.';
+    }
+
+    private static function intOrNull(mixed $value): ?int
+    {
+        return $value === null || trim((string) $value) === '' ? null : (int) $value;
     }
 
     private static function blankToNull(mixed $value): ?string

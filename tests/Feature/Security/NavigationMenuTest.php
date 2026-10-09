@@ -47,7 +47,9 @@ it('hides Administration from a Cashier but keeps the payment screens', function
 
 it('shows a Technician only service screens, with no money screens', function (): void {
     // The Technician holds service.view and service.execute and nothing financial (PRD section 2).
-    expect(menuFor(RoleCode::Technician))->toBe(['Dashboard', 'Subscribers', 'Subscribers > Service Accounts', 'Services']);
+    // The Service Accounts list shows the monthly rate, so it needs subscriber.view (Phase 3);
+    // the Technician's own "Services" item is the operational view.
+    expect(menuFor(RoleCode::Technician))->toBe(['Dashboard', 'Services']);
 });
 
 it('shows an Auditor the audit log but not user management', function (): void {

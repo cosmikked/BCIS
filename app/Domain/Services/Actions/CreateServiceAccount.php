@@ -66,8 +66,12 @@ final class CreateServiceAccount
             'billing_due_day' => 'billing due day',
         ])->validate();
 
+        // A blank form field arrives as '', which must mean "not given", never id or day 0.
+        $dueDay = $this->intOrNull($data['billing_due_day'] ?? null);
+        $collectorId = $this->intOrNull($data['collector_id'] ?? null);
+
         try {
-            return DB::transaction(function () use ($actor, $data): ServiceAccount {
+            return DB::transaction(function () use ($actor, $data, $dueDay, $collectorId): ServiceAccount {
                 $subscriber = Subscriber::query()->whereKey((int) $data['subscriber_id'])->lockForUpdate()->firstOrFail();
 
                 if ($subscriber->status !== SubscriberStatus::Active) {
@@ -95,7 +99,7 @@ final class CreateServiceAccount
                     'service_address_id' => $address->id,
                     'status' => ServiceStatus::Pending,
                     'billing_start_date' => $data['billing_start_date'],
-                    'billing_due_day' => isset($data['billing_due_day']) ? (int) $data['billing_due_day'] : $subscriber->billing_due_day,
+                    'billing_due_day' => $dueDay ?? $subscriber->billing_due_day,
                     // INV-20: the rate is a copy, not a reference to the plan.
                     'current_rate_centavos' => $plan->price_centavos,
                     'created_by' => $actor->id,
@@ -123,8 +127,8 @@ final class CreateServiceAccount
                     ],
                 );
 
-                if (isset($data['collector_id'])) {
-                    $this->assignCollector->forServiceAccount($actor, $account->id, (int) $data['collector_id']);
+                if ($collectorId !== null) {
+                    $this->assignCollector->forServiceAccount($actor, $account->id, $collectorId);
                 }
 
                 return $account->refresh();
@@ -132,5 +136,10 @@ final class CreateServiceAccount
         } catch (UniqueConstraintViolationException) {
             throw ValidationException::withMessages(['form' => 'The account number was already taken. Try again.']);
         }
+    }
+
+    private function intOrNull(mixed $value): ?int
+    {
+        return $value === null || trim((string) $value) === '' ? null : (int) $value;
     }
 }

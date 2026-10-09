@@ -11,6 +11,12 @@ use App\Livewire\Admin\Settings;
 use App\Livewire\Admin\Users;
 use App\Livewire\Security\ChangePassword;
 use App\Livewire\Security\Login;
+use App\Livewire\Services\Plans;
+use App\Livewire\Services\ServiceAccounts;
+use App\Livewire\Services\ServiceHistory;
+use App\Livewire\Subscribers\SubscriberForm;
+use App\Livewire\Subscribers\SubscriberList;
+use App\Livewire\Subscribers\SubscriberProfile;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -34,6 +40,29 @@ Route::middleware(['auth', 'permission:user.manage'])->get('/admin/users', Users
 Route::middleware(['auth', 'permission:role.manage'])->get('/admin/roles', Roles::class)->name('admin.roles');
 Route::middleware(['auth', 'permission:settings.manage'])->get('/admin/settings', Settings::class)->name('admin.settings');
 Route::middleware(['auth', 'permission:audit.view'])->get('/admin/audit-log', AuditLogViewer::class)->name('admin.audit');
+
+/*
+|--------------------------------------------------------------------------
+| PLANS, SUBSCRIBERS AND SERVICE ACCOUNTS (Phase 3)
+|--------------------------------------------------------------------------
+| Reading needs subscriber.view; creating and editing a subscriber needs
+| subscriber.manage. Changing a service status, assigning a collector or
+| editing a plan is checked again inside the Livewire component and the Action.
+| There is deliberately NO delete route for subscribers, service accounts or
+| plans: they are retired with a status (INV-19).
+*/
+Route::middleware(['auth', 'permission:subscriber.view'])->group(function (): void {
+    Route::get('/subscribers', SubscriberList::class)->name('subscribers.index');
+    Route::get('/subscribers/{subscriber}', SubscriberProfile::class)->whereNumber('subscriber')->name('subscribers.show');
+    Route::get('/plans', Plans::class)->name('plans.index');
+    Route::get('/service-accounts', ServiceAccounts::class)->name('service-accounts.index');
+    Route::get('/service-history', ServiceHistory::class)->name('service-history.index');
+});
+
+Route::middleware(['auth', 'permission:subscriber.manage'])->group(function (): void {
+    Route::get('/subscribers/new', SubscriberForm::class)->name('subscribers.create');
+    Route::get('/subscribers/{subscriber}/edit', SubscriberForm::class)->whereNumber('subscriber')->name('subscribers.edit');
+});
 
 /*
 |--------------------------------------------------------------------------
