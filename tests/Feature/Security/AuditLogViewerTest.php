@@ -16,15 +16,27 @@ use App\Domain\Security\AuditAction;
 use App\Domain\Security\AuditLogger;
 use App\Domain\Security\Exceptions\LoginFailed;
 use App\Domain\Security\RoleCode;
+use App\Domain\Services\Actions\AssignCollector;
+use App\Domain\Services\Actions\ChangeServiceStatus;
+use App\Domain\Services\Actions\CreatePlan;
+use App\Domain\Services\Actions\SetPlanActive;
+use App\Domain\Services\Actions\UpdatePlan;
+use App\Domain\Services\Enums\ServiceStatus;
+use App\Domain\Subscribers\Actions\ChangeSubscriberStatus;
+use App\Domain\Subscribers\Actions\UpdateSubscriber;
+use App\Domain\Subscribers\Enums\SubscriberStatus;
 use App\Livewire\Admin\AuditLogViewer;
 use App\Models\AuditLog;
+use App\Models\Collector;
 use App\Models\Role;
+use App\Models\ServicePlan;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
+use Tests\Support\SubscriberData;
 use Tests\Support\Users;
 
 // FR-SEC-009, FR-SEC-010, INV-18, AT-10
@@ -200,6 +212,19 @@ it('records every kind of security event and the viewer can show each one (FR-SE
     app(ReactivateUser::class)->handle($owner, $created->user->id, 'Came back');
     app(UpdateRolePermissions::class)->handle($owner, $roleId(RoleCode::Viewer), ['dashboard.view'], 'Narrow the viewer');
     app(UpdateSetting::class)->handle($owner, 'security.lockout_minutes', 20, 'Policy review');
+
+    // Plans, subscribers, service accounts and collectors (Phase 3).
+    $plan = ServicePlan::factory()->create();
+    app(CreatePlan::class)->handle($owner, ['code' => 'AUD-1', 'name' => 'Audit plan', 'service_type_id' => $plan->service_type_id, 'price' => '799', 'speed_mbps' => 10]);
+    app(UpdatePlan::class)->handle($owner, $plan->id, ['name' => 'Audit plan 2', 'price' => '899', 'speed_mbps' => 10], 'Price review');
+    app(SetPlanActive::class)->handle($owner, $plan->id, false, 'Retire');
+    app(SetPlanActive::class)->handle($owner, $plan->id, true, 'Restore');
+    $subscriber = SubscriberData::subscriber($owner);
+    app(UpdateSubscriber::class)->handle($owner, $subscriber->id, [...SubscriberData::input(), 'full_name' => 'Renamed Person']);
+    $account = SubscriberData::account($owner, $subscriber, $plan);
+    app(ChangeServiceStatus::class)->handle($owner, $account->id, ServiceStatus::Active, 'Installed');
+    app(AssignCollector::class)->forServiceAccount($owner, $account->id, Collector::factory()->create()->id);
+    app(ChangeSubscriberStatus::class)->handle($owner, $subscriber->id, SubscriberStatus::Inactive, 'Paused');
 
     $recorded = AuditLog::query()->distinct()->pluck('action')->all();
     $expected = array_map(fn (AuditAction $a) => $a->value, AuditAction::cases());

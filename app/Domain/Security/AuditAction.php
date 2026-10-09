@@ -28,4 +28,14 @@ enum AuditAction: string
     case UserUnlocked = 'user.unlocked';
     case RolePermissionsChanged = 'role.permissions_changed';
     case SettingChanged = 'settings.changed';
+    case PlanCreated = 'plan.created';
+    case PlanUpdated = 'plan.updated';
+    case PlanActivated = 'plan.activated';
+    case PlanDeactivated = 'plan.deactivated';
+    case SubscriberCreated = 'subscriber.created';
+    case SubscriberUpdated = 'subscriber.updated';
+    case SubscriberStatusChanged = 'subscriber.status_changed';
+    case ServiceAccountCreated = 'service_account.created';
+    case ServiceStatusChanged = 'service_account.status_changed';
+    case CollectorAssigned = 'collector.assigned';
 }

@@ -6,6 +6,11 @@ namespace App\Providers;
 
 use App\Domain\Security\Permission;
 use App\Domain\Security\SettingsRepository;
+use App\Domain\Subscribers\Search\GlobalSearch;
+use App\Domain\Subscribers\Search\Sources\AccountNumberSource;
+use App\Domain\Subscribers\Search\Sources\AddressSource;
+use App\Domain\Subscribers\Search\Sources\ContactSource;
+use App\Domain\Subscribers\Search\Sources\NameSource;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -24,6 +29,17 @@ class AppServiceProvider extends ServiceProvider
 
         // One settings read per key per request (FR-SEC-013).
         $this->app->scoped(SettingsRepository::class);
+
+        // Global search (FR-SUB-003). Each phase that adds a searchable thing
+        // (invoice number, receipt number, GCash reference) adds one
+        // SearchSource class to this list; GlobalSearch itself does not change.
+        $this->app->tag([
+            AccountNumberSource::class,
+            NameSource::class,
+            ContactSource::class,
+            AddressSource::class,
+        ], 'subscriber.search.sources');
+        $this->app->when(GlobalSearch::class)->needs('$sources')->giveTagged('subscriber.search.sources');
     }
 
     public function boot(): void
