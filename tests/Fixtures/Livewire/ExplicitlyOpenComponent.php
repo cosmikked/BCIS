@@ -16,6 +16,7 @@ final class ExplicitlyOpenComponent extends Component
         //
     }
 
+    #[SkipsAuthorization('Renders no data, only a button.')]
     public function render(): string
     {
         return '<div></div>';

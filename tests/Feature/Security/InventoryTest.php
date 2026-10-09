@@ -69,6 +69,6 @@ it('flags a Livewire method that forgot to authorize and accepts explicit marker
 
     $violations = LivewireActionInventory::violations([UnauthorizedComponent::class]);
 
-    expect($violations)->toHaveCount(2)
-        ->and(implode("\n", $violations))->toContain('mount()')->toContain('deleteEverything()');
+    expect($violations)->toHaveCount(3)
+        ->and(implode("\n", $violations))->toContain('mount()')->toContain('deleteEverything()')->toContain('no per-request authorization');
 });

@@ -51,7 +51,7 @@ return [
     ['label' => 'Administration', 'children' => [
         ['label' => 'Users', 'route' => 'admin.users', 'permission' => 'user.manage'],
         ['label' => 'Roles & Permissions', 'route' => 'admin.roles', 'permission' => 'role.manage'],
-        ['label' => 'Settings', 'permission' => 'settings.manage'],
-        ['label' => 'Audit Log', 'permission' => 'audit.view'],
+        ['label' => 'Settings', 'route' => 'admin.settings', 'permission' => 'settings.manage'],
+        ['label' => 'Audit Log', 'route' => 'admin.audit', 'permission' => 'audit.view'],
     ]],
 ];

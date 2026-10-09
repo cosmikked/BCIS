@@ -41,24 +41,39 @@ it('serves the admin screens to an Owner', function (): void {
     $this->get(route('admin.roles'))->assertOk()->assertSee('Permission matrix');
 });
 
-it('refuses every Administration route to every role that lacks the permission (AT-10)', function (): void {
+it('refuses every Administration route to every role that lacks its permission (AT-10)', function (): void {
+    // route name => permission code, read from the route's own middleware.
     $routes = collect(Route::getRoutes()->getRoutes())
         ->filter(fn ($route) => str_starts_with((string) $route->getName(), 'admin.'))
-        ->map(fn ($route) => $route->getName())
-        ->values();
+        ->mapWithKeys(function ($route): array {
+            $permission = collect($route->gatherMiddleware())->first(fn ($m) => is_string($m) && str_starts_with($m, 'permission:'));
 
-    expect($routes->all())->not->toBe([]);
+            return [$route->getName() => substr((string) $permission, strlen('permission:'))];
+        });
 
+    expect($routes->keys()->all())->toContain('admin.users', 'admin.roles', 'admin.settings', 'admin.audit')
+        ->and($routes->contains(''))->toBeFalse(); // every admin route names a permission
+
+    $refusals = 0;
     foreach ([RoleCode::Cashier, RoleCode::Administrator, RoleCode::Auditor, RoleCode::Technician, RoleCode::Viewer, RoleCode::CollectionSupervisor] as $role) {
         $user = TestUsers::make('u.'.strtolower($role->value), $role);
+        $held = array_map(fn ($p) => $p->value, $role->permissions());
 
-        foreach ($routes as $name) {
-            $this->actingAs($user)->get(route($name))->assertForbidden();
+        foreach ($routes as $name => $permission) {
+            $response = $this->actingAs($user)->get(route($name));
+
+            if (in_array($permission, $held, true)) {
+                $response->assertOk(); // e.g. the Auditor may read the audit log
+            } else {
+                $response->assertForbidden();
+                $refusals++;
+            }
         }
     }
 
-    // Each refusal was audited.
-    expect(AuditLog::query()->where('action', 'security.access_denied')->count())->toBe($routes->count() * 6);
+    // A Cashier is refused on all of them, and each refusal was audited.
+    expect($refusals)->toBeGreaterThanOrEqual($routes->count())
+        ->and(AuditLog::query()->where('action', 'security.access_denied')->count())->toBe($refusals);
 });
 
 it('sends a guest to sign in instead of the admin screens', function (): void {

@@ -27,4 +27,5 @@ enum AuditAction: string
     case UserPasswordReset = 'user.password_reset';
     case UserUnlocked = 'user.unlocked';
     case RolePermissionsChanged = 'role.permissions_changed';
+    case SettingChanged = 'settings.changed';
 }

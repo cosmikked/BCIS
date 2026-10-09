@@ -38,6 +38,10 @@ final class LivewireActionInventory
                 continue;
             }
 
+            if (! self::authorizesEveryRequest($reflection)) {
+                $violations[] = "{$class} has no per-request authorization: boot() or render() must authorize, so a page left open cannot keep reading data after the permission is gone.";
+            }
+
             foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
                 if ($method->getDeclaringClass()->getName() !== $class || $method->isStatic() || self::ignored($method)) {
                     continue;
@@ -54,6 +58,33 @@ final class LivewireActionInventory
         }
 
         return $violations;
+    }
+
+    /**
+     * Every Livewire request (action, $refresh, polling, pagination) re-renders
+     * the component, which can show data. boot() runs first on all of them, so
+     * boot() or render() must check the permission, or say why it need not.
+     *
+     * @param  ReflectionClass<object>  $reflection
+     */
+    private static function authorizesEveryRequest(ReflectionClass $reflection): bool
+    {
+        foreach (['boot', 'render'] as $name) {
+            if (! $reflection->hasMethod($name)) {
+                continue;
+            }
+
+            $method = $reflection->getMethod($name);
+            if ($method->getDeclaringClass()->getName() !== $reflection->getName()) {
+                continue;
+            }
+
+            if ($method->getAttributes(SkipsAuthorization::class) !== [] || preg_match(self::AUTHORIZES, self::source($method)) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function ignored(ReflectionMethod $method): bool

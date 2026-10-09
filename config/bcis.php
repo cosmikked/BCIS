@@ -60,6 +60,17 @@ return [
         'security.idle_lock_minutes' => 15,   // FR-SEC-003
     ],
 
+    /*
+    | What the settings screen may edit (FR-SEC-013): label, unit and allowed
+    | whole-number range. A key must be listed here AND in setting_defaults.
+    | Later phases add their own keys (grace period, fees, thresholds, ...).
+    */
+    'setting_rules' => [
+        'security.max_login_attempts' => ['label' => 'Failed sign-ins before lockout', 'unit' => 'attempts', 'min' => 3, 'max' => 20],
+        'security.lockout_minutes' => ['label' => 'Lockout length', 'unit' => 'minutes', 'min' => 1, 'max' => 1440],
+        'security.idle_lock_minutes' => ['label' => 'Idle time before the screen locks', 'unit' => 'minutes', 'min' => 1, 'max' => 480],
+    ],
+
     // Password rules for users choosing their own password (PRD 19 has no rule,
     // so this default is flagged in the commit message).
     'password_min_length' => 12,

@@ -56,6 +56,13 @@ class Users extends Component
 
     public string $reason = '';
 
+    // Runs on every request (page load, action, $refresh, polling), so a page
+    // left open cannot keep reading user data after the permission is gone.
+    public function boot(): void
+    {
+        $this->authorize('user.manage');
+    }
+
     public function mount(): void
     {
         $this->authorize('user.manage');

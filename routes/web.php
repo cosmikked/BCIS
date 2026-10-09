@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\SessionLockController;
+use App\Livewire\Admin\AuditLogViewer;
 use App\Livewire\Admin\Roles;
+use App\Livewire\Admin\Settings;
 use App\Livewire\Admin\Users;
 use App\Livewire\Security\ChangePassword;
 use App\Livewire\Security\Login;
@@ -30,6 +32,8 @@ Route::get('/login', Login::class)->middleware('guest')->name('login');
 */
 Route::middleware(['auth', 'permission:user.manage'])->get('/admin/users', Users::class)->name('admin.users');
 Route::middleware(['auth', 'permission:role.manage'])->get('/admin/roles', Roles::class)->name('admin.roles');
+Route::middleware(['auth', 'permission:settings.manage'])->get('/admin/settings', Settings::class)->name('admin.settings');
+Route::middleware(['auth', 'permission:audit.view'])->get('/admin/audit-log', AuditLogViewer::class)->name('admin.audit');
 
 /*
 |--------------------------------------------------------------------------

@@ -13,6 +13,11 @@ final class AuthorizedComponent extends Component
 {
     use AuthorizesRequests;
 
+    public function boot(): void
+    {
+        $this->authorize('payment.view');
+    }
+
     public function mount(): void
     {
         $this->authorize('payment.view');
