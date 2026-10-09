@@ -7,6 +7,7 @@ use App\Http\Middleware\EnforceSessionState;
 use App\Http\Middleware\RequestId;
 use App\Http\Middleware\RequirePasswordChange;
 use App\Http\Middleware\RequirePermission;
+use App\Http\Middleware\SecurityHeaders;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Application;
@@ -14,6 +15,12 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+
+// Stack traces must not carry function arguments. With the PHP default of Off, a
+// trace printed in a log shows the first characters of every string argument,
+// which can include a typed password (INV-24, FR-SEC-011). Set before any
+// exception is created. The deployment php.ini should set it too (README).
+ini_set('zend.exception_ignore_args', '1');
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -23,6 +30,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // First in the stack, so even rejected requests carry an id in the logs.
         $middleware->prepend(RequestId::class);
+
+        // Security headers and CSP on every response, errors included (NFR-15).
+        $middleware->append(SecurityHeaders::class);
 
         // Route permission check (INV-17): ->middleware(['auth', 'permission:payment.create'])
         $middleware->alias(['permission' => RequirePermission::class]);

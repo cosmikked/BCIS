@@ -49,7 +49,9 @@ return [
     |
     */
 
-    'encrypt' => env('SESSION_ENCRYPT', false),
+    // On by default: the session payload in the database is encrypted, so a
+    // database dump or read-only SQL access does not reveal session contents.
+    'encrypt' => env('SESSION_ENCRYPT', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -201,7 +203,9 @@ return [
     |
     */
 
-    'same_site' => env('SESSION_SAME_SITE', 'lax'),
+    // BCIS is one internal site, so the strictest setting costs nothing: the
+    // cookie is never sent on a request started from another site (CSRF defence in depth).
+    'same_site' => env('SESSION_SAME_SITE', 'strict'),
 
     /*
     |--------------------------------------------------------------------------

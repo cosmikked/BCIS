@@ -82,11 +82,21 @@ Business rules live in `app/Domain/<Module>`. Money is an integer number of cent
 
    Copy `.env` to `.env.testing`, set `APP_ENV=testing` and `DB_DATABASE=bcis_test`, and use the owner role (the tests rebuild the schema). The test suite refuses to run unless the database name ends in `_test`.
 
-5. **Run the migrations**
+5. **Run the migrations and seed the roles and the first Owner**
+
+   Choose the Owner and demo passwords in `.env` first (they are read only by the seeders and never stored in the repository):
 
    ```
-   php artisan migrate:fresh
+   OWNER_USERNAME=owner
+   OWNER_INITIAL_PASSWORD=<choose a strong initial password>
+   SEED_DEMO_PASSWORD=<choose a demo password>
    ```
+
+   ```
+   php artisan migrate:fresh --seed
+   ```
+
+   The seed creates the roles and permissions (PRD section 2), the Owner, and one demo user per other role (`demo.admin`, `demo.cashier`, `demo.supervisor`, `demo.auditor`, `demo.technician`, `demo.viewer`; skipped when `APP_ENV=production`). The Owner must change the initial password at first sign-in. Remove `OWNER_INITIAL_PASSWORD` from `.env` afterwards.
 
 6. **Start the server** (development)
 
@@ -96,7 +106,7 @@ Business rules live in `app/Domain/<Module>`. Money is an integer number of cent
 
    Check `http://<server>:8000/health`. It returns `{"status":"ok","database":"ok",...}` when the database is reachable, or HTTP 503 when it is not.
 
-Production deployment (web server, queue worker and scheduler services, HTTPS on the LAN, backups) is a later phase. Security headers and CSP (NFR-15) are also later work.
+Production deployment (web server, queue worker and scheduler services, HTTPS on the LAN, backups) is a later phase. Security headers, CSP and cookie settings are in place (see Security notes below).
 
 ## Commands
 
@@ -172,3 +182,12 @@ docs/                  PRD, ERD plan, phase files
 - PostgreSQL only. No SQLite anywhere, including tests.
 - No secrets in Git: `.env` and `.env.testing` are ignored; `.env.example` has none.
 - Demo data is synthetic only. Never put real customers, phone numbers or GCash details in this repository.
+
+### Sessions, cookies and HTTPS (FR-SEC-008, NFR-15)
+
+- The session driver is `database`, and the stored payload is encrypted (`SESSION_ENCRYPT=true`).
+- Cookies are always `HttpOnly` and `SameSite=Strict`. CSRF protection is on for every form and Livewire call.
+- **HTTPS is strongly preferred on the LAN**, with an internal certificate authority installed on the three PCs. Once the site is served over HTTPS, set `SESSION_SECURE_COOKIE=true`; the server then also sends `Strict-Transport-Security`.
+- **If the LAN runs on plain HTTP, the risk is this:** anyone who can watch network traffic between a PC and the server can read the session cookie and sign in as that user, and can read the passwords typed at sign-in. Do not set `SESSION_SECURE_COOKIE=true` on plain HTTP (the browser would never send the cookie back). Keep the server on a trusted, switched network and record the decision in the deployment guide.
+- Every response carries `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, cross-origin policies and a nonce-based `Content-Security-Policy`. While `APP_DEBUG=true` the policy is sent Report-Only (so Laravel's debug error page still renders); with `APP_DEBUG=false` it is enforced. `script-src` still allows `'unsafe-eval'` for Livewire's Alpine build; Livewire's `csp_safe` option should replace this once it has been checked in a real browser.
+- Set `zend.exception_ignore_args = On` in the production `php.ini`. The app also sets it at start-up, so stack traces never carry typed passwords into the logs.

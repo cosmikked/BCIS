@@ -47,3 +47,30 @@ Working login, seeded Owner, the role matrix as a screenshot, authorization test
 ## Do not
 
 Check role names in code. Rely on hidden buttons. Store plaintext passwords. Add delete routes for users.
+
+## Note: server-side checks versus hidden menu items
+
+The sidebar (`config/navigation.php`, `NavigationMenu`) hides items a user cannot use. That is tidiness, not security: a Cashier who types `/admin/users` into the address bar, or replays a Livewire request from the browser's developer tools, never touches the menu. Authorization therefore happens in four places that do not depend on what the page shows:
+
+1. **Route:** `->middleware(['auth', 'permission:user.manage'])` returns 403 and writes an audit row.
+2. **Livewire component:** `boot()` authorizes on every request (load, action, refresh, paging) and each action method authorizes again before it does anything.
+3. **Action class:** `Gate::forUser($actor)->authorize(...)` at the start of every business operation, so the rule holds for any caller (a component, a command, a test).
+4. **Inputs:** Livewire public properties are untrusted. Ids are `#[Locked]`, and every id, role or permission code is re-fetched and re-validated inside the Action.
+
+Tests prove each layer: `InventoryTest` fails if a route or Livewire method has no check, `AdminScreensTest` calls every admin route and component method as a role without the permission, and the tamper tests change locked and unlocked properties and expect refusal.
+
+## Decisions made without a PRD rule (flagged in the commits)
+
+| Topic | Default used |
+| --- | --- |
+| Password rule | At least 12 characters, no username inside, different from the current one. |
+| Lockout | The stated 5 attempts and 15 minutes, no escalating durations. Attempts made while locked are not audited. |
+| Idle timeout | The idle lock is the only idle timeout (default 15 minutes). Full expiry still follows `SESSION_LIFETIME`. |
+| Demo users | Not temporary-password accounts, so they can sign in straight away. |
+| Audit IP | Kept in `new_values` of sign-in events, no `ip_address` column. |
+| Self-service | No self-deactivation and no self-reset of password by an administrator. |
+| Privilege rule | Nobody manages an account that holds permissions they lack (stops a user manager taking over the Owner). |
+| Roles | Role permissions are editable at runtime except the Owner role. Reseeding restores the PRD matrix. |
+| Setting ranges | 3 to 20 failed sign-ins, 1 to 1440 lockout minutes, 1 to 480 idle minutes. Whole numbers only. |
+| CSP | Nonce-based. `script-src` keeps `'unsafe-eval'` for Livewire's Alpine build until `csp_safe` is checked in a browser. Report-Only while `APP_DEBUG=true`. |
+| Cookies | `HttpOnly`, `SameSite=Strict`, encrypted database sessions. `Secure` is switched on with `SESSION_SECURE_COOKIE` once HTTPS is in place. |
