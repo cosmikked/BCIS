@@ -7,43 +7,51 @@ declare(strict_types=1);
 | Sidebar navigation (PRD section 17)
 |--------------------------------------------------------------------------
 |
-| Placeholder structure only. Items without a 'route' render as inactive until
-| their phase builds the screen. 'permission' stays null until Phase 2 adds
-| roles; then menus follow permissions (FR-UI-010). Hiding a menu item is
-| never authorization: every route and action checks the permission itself.
+| Each leaf names the permission that shows it (FR-UI-010). A group is shown
+| when at least one of its children is. Items without a 'route' render as
+| inactive text until their phase builds the screen.
+|
+| Hiding a menu item is NOT authorization. Every route and Livewire action
+| checks the permission itself (INV-17); this list only keeps the menu tidy.
 |
 */
 
 return [
+    // Landing page for every signed-in user, so it needs no permission.
     ['label' => 'Dashboard', 'route' => 'home', 'permission' => null],
-    ['label' => 'Subscribers', 'permission' => null, 'children' => [
-        ['label' => 'All Subscribers'],
-        ['label' => 'New Subscriber'],
-        ['label' => 'Service Accounts'],
+    ['label' => 'Subscribers', 'children' => [
+        ['label' => 'All Subscribers', 'permission' => 'subscriber.view'],
+        ['label' => 'New Subscriber', 'permission' => 'subscriber.manage'],
+        ['label' => 'Service Accounts', 'permission' => 'service.view'],
     ]],
-    ['label' => 'Billing', 'permission' => null, 'children' => [
-        ['label' => 'Current Billing'],
-        ['label' => 'Generate Billing'],
-        ['label' => 'Invoices'],
+    ['label' => 'Billing', 'children' => [
+        ['label' => 'Current Billing', 'permission' => 'billing.view'],
+        ['label' => 'Generate Billing', 'permission' => 'billing.generate'],
+        ['label' => 'Invoices', 'permission' => 'billing.view'],
     ]],
-    ['label' => 'Payments', 'permission' => null, 'children' => [
-        ['label' => 'Receive Payment'],
-        ['label' => 'Payment History'],
-        ['label' => 'GCash Verification'],
+    ['label' => 'Payments', 'children' => [
+        ['label' => 'Receive Payment', 'permission' => 'payment.create'],
+        ['label' => 'Payment History', 'permission' => 'payment.view'],
+        ['label' => 'GCash Verification', 'permission' => 'gcash.verify'],
     ]],
-    ['label' => 'Collections', 'permission' => null, 'children' => [
-        ['label' => 'Collectors'],
-        ['label' => 'Areas & Routes'],
-        ['label' => 'Collection Batches'],
-        ['label' => 'Remittance'],
+    ['label' => 'Collections', 'children' => [
+        ['label' => 'Collectors', 'permission' => 'collection.manage'],
+        ['label' => 'Areas & Routes', 'permission' => 'collection.manage'],
+        ['label' => 'Collection Batches', 'permission' => 'collection.record'],
+        ['label' => 'Remittance', 'permission' => 'collection.remit'],
     ]],
-    ['label' => 'Receivables', 'permission' => null, 'children' => [
-        ['label' => 'Outstanding'],
-        ['label' => 'Overdue'],
-        ['label' => 'Aging'],
-        ['label' => 'Suspension Candidates'],
+    ['label' => 'Receivables', 'children' => [
+        ['label' => 'Outstanding', 'permission' => 'receivable.view'],
+        ['label' => 'Overdue', 'permission' => 'receivable.view'],
+        ['label' => 'Aging', 'permission' => 'receivable.view'],
+        ['label' => 'Suspension Candidates', 'permission' => 'receivable.view'],
     ]],
-    ['label' => 'Services', 'permission' => null],
-    ['label' => 'Reports', 'permission' => null],
-    ['label' => 'Administration', 'permission' => null],
+    ['label' => 'Services', 'permission' => 'service.view'],
+    ['label' => 'Reports', 'permission' => 'report.view'],
+    ['label' => 'Administration', 'children' => [
+        ['label' => 'Users', 'route' => 'admin.users', 'permission' => 'user.manage'],
+        ['label' => 'Roles & Permissions', 'route' => 'admin.roles', 'permission' => 'role.manage'],
+        ['label' => 'Settings', 'permission' => 'settings.manage'],
+        ['label' => 'Audit Log', 'permission' => 'audit.view'],
+    ]],
 ];

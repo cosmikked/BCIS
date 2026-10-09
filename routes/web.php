@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\SessionLockController;
+use App\Livewire\Admin\Roles;
+use App\Livewire\Admin\Users;
 use App\Livewire\Security\ChangePassword;
 use App\Livewire\Security\Login;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +20,16 @@ use Illuminate\Support\Facades\Route;
 */
 Route::get('/health', HealthController::class)->name('health');
 Route::get('/login', Login::class)->middleware('guest')->name('login');
+
+/*
+|--------------------------------------------------------------------------
+| ADMINISTRATION (permission-protected)
+|--------------------------------------------------------------------------
+| Each route names the permission it needs. Livewire components inside also
+| authorize every method; the route check is only the first of two.
+*/
+Route::middleware(['auth', 'permission:user.manage'])->get('/admin/users', Users::class)->name('admin.users');
+Route::middleware(['auth', 'permission:role.manage'])->get('/admin/roles', Roles::class)->name('admin.roles');
 
 /*
 |--------------------------------------------------------------------------

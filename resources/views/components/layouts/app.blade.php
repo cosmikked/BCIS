@@ -23,7 +23,7 @@
                 <span class="block text-xs font-normal text-white/60">Bukidnon Cable &amp; Internet</span>
             </div>
             <nav class="flex-1 px-3 pb-6 text-sm">
-                @foreach (config('navigation') as $item)
+                @foreach (\App\Domain\Security\NavigationMenu::visibleFor(auth()->user(), config('navigation')) as $item)
                     @php
                         $active = isset($item['route']) && request()->routeIs($item['route']);
                     @endphp
@@ -37,7 +37,14 @@
                         @endif
 
                         @foreach ($item['children'] ?? [] as $child)
-                            <span class="block cursor-default rounded-md py-1.5 pl-6 pr-3 text-white/50">{{ $child['label'] }}</span>
+                            @if (isset($child['route']))
+                                @php($childActive = request()->routeIs($child['route']))
+                                <a href="{{ route($child['route']) }}" wire:navigate
+                                   @class(['block rounded-md py-1.5 pl-6 pr-3', 'bg-white/15 font-semibold' => $childActive, 'text-white/80 hover:bg-white/10' => ! $childActive])
+                                   @if ($childActive) aria-current="page" @endif>{{ $child['label'] }}</a>
+                            @else
+                                <span class="block cursor-default rounded-md py-1.5 pl-6 pr-3 text-white/50">{{ $child['label'] }}</span>
+                            @endif
                         @endforeach
                     </div>
                 @endforeach

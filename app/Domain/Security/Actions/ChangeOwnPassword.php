@@ -8,6 +8,7 @@ use App\Domain\Security\AuditAction;
 use App\Domain\Security\AuditLogger;
 use App\Domain\Security\Exceptions\LoginFailed;
 use App\Domain\Security\PasswordAttemptGuard;
+use App\Domain\Security\UserSessions;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -74,11 +75,6 @@ final class ChangeOwnPassword
         });
 
         // Other devices signed in with the old password are signed out.
-        if (config('session.driver') === 'database') {
-            DB::table(config('session.table', 'sessions'))
-                ->where('user_id', $user->id)
-                ->when($keepSessionId !== null, fn ($q) => $q->where('id', '!=', $keepSessionId))
-                ->delete();
-        }
+        UserSessions::revokeAll($user->id, $keepSessionId);
     }
 }

@@ -20,4 +20,11 @@ enum AuditAction: string
     case UnlockFailed = 'auth.unlock_failed';
     case PasswordChanged = 'auth.password_changed';
     case PasswordChangeFailed = 'auth.password_change_failed';
+    case UserCreated = 'user.created';
+    case UserRolesChanged = 'user.roles_changed';
+    case UserDeactivated = 'user.deactivated';
+    case UserReactivated = 'user.reactivated';
+    case UserPasswordReset = 'user.password_reset';
+    case UserUnlocked = 'user.unlocked';
+    case RolePermissionsChanged = 'role.permissions_changed';
 }
