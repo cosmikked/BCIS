@@ -13,14 +13,13 @@ return [
     | if any other route lacks an auth middleware (INV-17). Add to this list
     | only on purpose and say why in the pull request.
     |
-    | "home" is a temporary placeholder shell page. Phase 2 (Security) puts it
-    | behind authentication and removes it from this list.
+    | "login" must be public: nobody is signed in yet when they reach it.
     |
     */
 
     'public_routes' => [
         'health',
-        'home',
+        'login',
     ],
 
     /*
@@ -35,7 +34,35 @@ return [
     |
     */
 
-    'authenticated_routes' => [],
+    'authenticated_routes' => [
+        'home',
+        'logout',
+        'password.change',
+        'session.heartbeat',
+        'session.lock',
+        'session.unlock',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Setting defaults
+    |--------------------------------------------------------------------------
+    |
+    | Used until the Owner saves a value in application_settings (FR-SEC-013).
+    | Keys are flat strings, not nested arrays, so they read the same here and
+    | in the database.
+    |
+    */
+
+    'setting_defaults' => [
+        'security.max_login_attempts' => 5,   // FR-SEC-002
+        'security.lockout_minutes' => 15,     // FR-SEC-002
+        'security.idle_lock_minutes' => 15,   // FR-SEC-003
+    ],
+
+    // Password rules for users choosing their own password (PRD 19 has no rule,
+    // so this default is flagged in the commit message).
+    'password_min_length' => 12,
 
     /*
     |--------------------------------------------------------------------------

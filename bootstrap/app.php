@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Domain\Security\DeniedAccessRecorder;
+use App\Http\Middleware\EnforceSessionState;
 use App\Http\Middleware\RequestId;
+use App\Http\Middleware\RequirePasswordChange;
 use App\Http\Middleware\RequirePermission;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -24,6 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Route permission check (INV-17): ->middleware(['auth', 'permission:payment.create'])
         $middleware->alias(['permission' => RequirePermission::class]);
+
+        // Guests go to the sign-in page. Signed-in users are held by the lock
+        // and temporary-password rules on every web request (FR-SEC-003/004).
+        $middleware->redirectGuestsTo(fn () => route('login'));
+        $middleware->appendToGroup('web', [EnforceSessionState::class, RequirePasswordChange::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Gates, Policies and Livewire actions refuse by throwing

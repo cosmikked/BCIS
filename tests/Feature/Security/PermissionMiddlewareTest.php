@@ -68,10 +68,13 @@ it('requires every listed permission', function (): void {
     $this->get('/_t/both')->assertOk();
 });
 
-it('refuses an inactive user even if the role would allow it', function (): void {
+it('turns away an inactive user even if the role would allow it', function (): void {
     loginAs(RoleCode::Owner, active: false);
 
-    $this->get('/_t/admin')->assertForbidden();
+    // The session-state middleware signs a deactivated user out before the
+    // permission check runs (see SessionLockTest). hasPermission() also returns
+    // false for inactive users, so the permission check alone would refuse too.
+    $this->get('/_t/admin')->assertRedirect(route('login'));
 });
 
 it('answers 401 when there is no logged-in user', function (): void {

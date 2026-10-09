@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Domain\Security\Permission;
+use App\Domain\Security\SettingsRepository;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -20,6 +21,9 @@ class AppServiceProvider extends ServiceProvider
         $pgsql = config('database.connections.pgsql');
 
         config(['database.connections' => ['pgsql' => $pgsql]]);
+
+        // One settings read per key per request (FR-SEC-013).
+        $this->app->scoped(SettingsRepository::class);
     }
 
     public function boot(): void

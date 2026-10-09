@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\LogoutController;
+use App\Http\Controllers\SessionLockController;
+use App\Livewire\Security\ChangePassword;
+use App\Livewire\Security\Login;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,6 +17,22 @@ use Illuminate\Support\Facades\Route;
 | if a route is added here without being listed there.
 */
 Route::get('/health', HealthController::class)->name('health');
+Route::get('/login', Login::class)->middleware('guest')->name('login');
 
-// TEMPORARY: placeholder shell page until authentication exists in Phase 2.
-Route::view('/', 'home')->name('home');
+/*
+|--------------------------------------------------------------------------
+| SIGNED-IN ROUTES FOR ANY USER
+|--------------------------------------------------------------------------
+| No specific permission, but the user must be signed in. Keep this list in
+| sync with config/bcis.php 'authenticated_routes'. Everything else in the
+| app uses ->middleware(['auth', 'permission:<code>']).
+*/
+Route::middleware('auth')->group(function (): void {
+    Route::view('/', 'home')->name('home');
+    Route::post('/logout', LogoutController::class)->name('logout');
+    Route::get('/password/change', ChangePassword::class)->name('password.change');
+
+    Route::post('/session/heartbeat', [SessionLockController::class, 'heartbeat'])->name('session.heartbeat');
+    Route::post('/session/lock', [SessionLockController::class, 'lock'])->name('session.lock');
+    Route::post('/session/unlock', [SessionLockController::class, 'unlock'])->name('session.unlock');
+});
