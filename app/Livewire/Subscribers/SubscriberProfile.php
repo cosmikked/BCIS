@@ -6,6 +6,7 @@ namespace App\Livewire\Subscribers;
 
 use App\Domain\Services\ServiceHistoryQuery;
 use App\Domain\Subscribers\Actions\ChangeSubscriberStatus;
+use App\Domain\Subscribers\Actions\UploadSubscriberDocument;
 use App\Domain\Subscribers\Enums\SubscriberStatus;
 use App\Models\Subscriber;
 use App\Models\User;
@@ -15,6 +16,8 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 /**
@@ -28,6 +31,7 @@ use Livewire\WithPagination;
 class SubscriberProfile extends Component
 {
     use AuthorizesRequests;
+    use WithFileUploads;
     use WithPagination;
 
     /**
@@ -58,6 +62,9 @@ class SubscriberProfile extends Component
     public string $statusTo = '';
 
     public string $reason = '';
+
+    /** The file chosen in the Documents tab; UploadSubscriberDocument judges its content. */
+    public ?TemporaryUploadedFile $upload = null;
 
     public function boot(): void
     {
@@ -95,6 +102,30 @@ class SubscriberProfile extends Component
         $this->resetErrorBag();
     }
 
+    public function uploadDocument(UploadSubscriberDocument $uploadDocument): void
+    {
+        $this->authorize('subscriber.manage');
+
+        if ($this->upload === null) {
+            throw ValidationException::withMessages(['upload' => 'Choose a file to upload.']);
+        }
+
+        try {
+            $document = $uploadDocument->handle($this->actor(), $this->subscriberId, $this->upload);
+        } catch (ValidationException $e) {
+            // A refused file is not kept in the temporary upload folder either.
+            $this->upload->delete();
+            $this->upload = null;
+
+            throw $e;
+        }
+
+        $this->upload->delete();
+        $this->upload = null;
+        $this->message = "{$document->original_name} uploaded.";
+        $this->resetErrorBag();
+    }
+
     public function render(): mixed
     {
         $this->authorize('subscriber.view');
@@ -125,6 +156,7 @@ class SubscriberProfile extends Component
             'creator' => User::query()->whereKey($subscriber->created_by)->value('full_name'),
             'canManage' => $actor->hasPermission('subscriber.manage'),
             'canCreateService' => $actor->hasPermission('service.manage'),
+            'maxUpload' => $this->limitLabel((int) config('bcis.documents.max_kb')),
             'nextStatuses' => $subscriber->status->allowedNext(),
             'accounts' => $tab === 'services'
                 ? $subscriber->serviceAccounts()->with(['plan.serviceType', 'serviceAddress', 'collector'])->orderBy('account_no')->get()
@@ -133,9 +165,14 @@ class SubscriberProfile extends Component
                 ? app(ServiceHistoryQuery::class)->build($actor, subscriberId: $subscriber->id)->simplePaginate(15)
                 : null,
             'documents' => $tab === 'documents'
-                ? $subscriber->documents()->orderByDesc('uploaded_at')->get()
+                ? $subscriber->documents()->with('uploader')->orderByDesc('uploaded_at')->orderByDesc('id')->get()
                 : collect(),
         ])->title($subscriber->full_name);
+    }
+
+    private function limitLabel(int $kb): string
+    {
+        return $kb >= 1024 ? rtrim(rtrim(number_format($kb / 1024, 1), '0'), '.').' MB' : $kb.' KB';
     }
 
     private function actor(): User

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\SessionLockController;
+use App\Http\Controllers\SubscriberDocumentController;
 use App\Livewire\Admin\AuditLogViewer;
 use App\Livewire\Admin\Roles;
 use App\Livewire\Admin\Settings;
@@ -14,6 +15,7 @@ use App\Livewire\Security\Login;
 use App\Livewire\Services\Plans;
 use App\Livewire\Services\ServiceAccounts;
 use App\Livewire\Services\ServiceHistory;
+use App\Livewire\Services\ServiceJobs;
 use App\Livewire\Subscribers\SubscriberForm;
 use App\Livewire\Subscribers\SubscriberList;
 use App\Livewire\Subscribers\SubscriberProfile;
@@ -57,7 +59,13 @@ Route::middleware(['auth', 'permission:subscriber.view'])->group(function (): vo
     Route::get('/plans', Plans::class)->name('plans.index');
     Route::get('/service-accounts', ServiceAccounts::class)->name('service-accounts.index');
     Route::get('/service-history', ServiceHistory::class)->name('service-history.index');
+    // The only way to read a stored document: private disk, no public URL (FR-SUB-010).
+    Route::get('/subscriber-documents/{document}', SubscriberDocumentController::class)->whereNumber('document')->name('subscriber-documents.show');
 });
+
+// The Technician's list of jobs: operational fields only, no rates (FR-SUB-013).
+// service.view is held by every role; what it shows is limited by the query itself.
+Route::middleware(['auth', 'permission:service.view'])->get('/services', ServiceJobs::class)->name('services.operational');
 
 Route::middleware(['auth', 'permission:subscriber.manage'])->group(function (): void {
     Route::get('/subscribers/new', SubscriberForm::class)->name('subscribers.create');

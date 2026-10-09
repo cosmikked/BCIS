@@ -95,6 +95,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Subscriber documents (FR-SUB-010)
+    |--------------------------------------------------------------------------
+    |
+    | Only these CONTENT types are accepted, judged from the file's bytes and not
+    | from its name or the type the browser claims. The stored extension comes
+    | from the detected type, never from the uploaded name. The default size
+    | limit is 5 MB (PRD section 19).
+    |
+    */
+
+    'documents' => [
+        'max_kb' => (int) env('DOCUMENT_MAX_KB', 5120),
+        'types' => [
+            'application/pdf' => 'pdf',
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Seed credentials (Phase 2)
     |--------------------------------------------------------------------------
     |

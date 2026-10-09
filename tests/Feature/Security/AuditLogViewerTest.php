@@ -24,6 +24,7 @@ use App\Domain\Services\Actions\UpdatePlan;
 use App\Domain\Services\Enums\ServiceStatus;
 use App\Domain\Subscribers\Actions\ChangeSubscriberStatus;
 use App\Domain\Subscribers\Actions\UpdateSubscriber;
+use App\Domain\Subscribers\Actions\UploadSubscriberDocument;
 use App\Domain\Subscribers\Enums\SubscriberStatus;
 use App\Livewire\Admin\AuditLogViewer;
 use App\Models\AuditLog;
@@ -32,8 +33,10 @@ use App\Models\Role;
 use App\Models\ServicePlan;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Tests\Support\SubscriberData;
@@ -225,6 +228,8 @@ it('records every kind of security event and the viewer can show each one (FR-SE
     app(ChangeServiceStatus::class)->handle($owner, $account->id, ServiceStatus::Active, 'Installed');
     app(AssignCollector::class)->forServiceAccount($owner, $account->id, Collector::factory()->create()->id);
     app(ChangeSubscriberStatus::class)->handle($owner, $subscriber->id, SubscriberStatus::Inactive, 'Paused');
+    Storage::fake('documents');
+    app(UploadSubscriberDocument::class)->handle($owner, $subscriber->id, UploadedFile::fake()->createWithContent('id.pdf', "%PDF-1.4\n%%EOF\n"));
 
     $recorded = AuditLog::query()->distinct()->pluck('action')->all();
     $expected = array_map(fn (AuditAction $a) => $a->value, AuditAction::cases());

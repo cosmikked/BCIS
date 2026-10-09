@@ -38,4 +38,5 @@ enum AuditAction: string
     case ServiceAccountCreated = 'service_account.created';
     case ServiceStatusChanged = 'service_account.status_changed';
     case CollectorAssigned = 'collector.assigned';
+    case SubscriberDocumentUploaded = 'subscriber.document_uploaded';
 }

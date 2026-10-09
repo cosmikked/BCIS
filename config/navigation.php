@@ -50,7 +50,7 @@ return [
         ['label' => 'Aging', 'permission' => 'receivable.view'],
         ['label' => 'Suspension Candidates', 'permission' => 'receivable.view'],
     ]],
-    ['label' => 'Services', 'permission' => 'service.view'],
+    ['label' => 'Services', 'route' => 'services.operational', 'permission' => 'service.view'],
     ['label' => 'Reports', 'permission' => 'report.view'],
     ['label' => 'Administration', 'children' => [
         ['label' => 'Users', 'route' => 'admin.users', 'permission' => 'user.manage'],

@@ -40,6 +40,18 @@ return [
             'report' => false,
         ],
 
+        // Subscriber documents (FR-SUB-010). Outside the web root, never linked
+        // from public/storage, and 'serve' is off, so no URL can reach a file:
+        // only SubscriberDocumentController reads it, after a permission check.
+        'documents' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/subscriber-documents'),
+            'serve' => false,
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

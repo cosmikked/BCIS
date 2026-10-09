@@ -163,6 +163,20 @@
         @case('documents')
             <section class="space-y-3">
                 <h3 class="text-base font-semibold text-ink">Documents</h3>
+
+                @if ($canManage)
+                    <form wire:submit="uploadDocument" class="rounded-md border border-line bg-surface p-4" novalidate>
+                        <label for="upload" class="label">Add a document</label>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <input id="upload" type="file" wire:model="upload" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" class="field max-w-md">
+                            <button type="submit" wire:loading.attr="disabled" wire:target="upload,uploadDocument" class="btn btn-primary btn-sm">Upload</button>
+                            <span wire:loading wire:target="upload" class="text-sm text-muted">Reading the file...</span>
+                        </div>
+                        @error('upload') <p role="alert" class="mt-2 text-sm text-danger">{{ $message }}</p> @enderror
+                        <p class="mt-2 text-xs text-muted">PDF, JPG or PNG, up to {{ $maxUpload }}. The file content is checked, not its name.</p>
+                    </form>
+                @endif
+
                 @if ($documents->isEmpty())
                     <x-ui.empty-state title="No documents on file" message="IDs, contracts and installation forms can be attached here." />
                 @else
@@ -174,15 +188,17 @@
                                     <th scope="col" class="px-4 py-2">Type</th>
                                     <th scope="col" class="px-4 py-2 text-right">Size</th>
                                     <th scope="col" class="px-4 py-2">Uploaded</th>
+                                    <th scope="col" class="px-4 py-2">By</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-line">
                                 @foreach ($documents as $document)
                                     <tr wire:key="document-{{ $document->id }}">
-                                        <td class="px-4 py-2">{{ $document->original_name }}</td>
+                                        <td class="px-4 py-2"><a href="{{ route('subscriber-documents.show', $document->id) }}" class="underline-offset-2 hover:underline">{{ $document->original_name }}</a></td>
                                         <td class="px-4 py-2 text-muted">{{ $document->mime_type }}</td>
                                         <td class="px-4 py-2 text-right tabular-nums">{{ number_format($document->size_bytes / 1024, 0) }} KB</td>
                                         <td class="whitespace-nowrap px-4 py-2 text-muted">{{ $document->uploaded_at->timezone('Asia/Manila')->format('M j, Y g:i A') }}</td>
+                                        <td class="px-4 py-2 text-muted">{{ $document->uploader?->full_name ?? '-' }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

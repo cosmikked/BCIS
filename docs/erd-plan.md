@@ -38,7 +38,8 @@ These tables support F10 and the audit rule in every other flow.
 | `application_settings` | key (unique), value (jsonb), updated\_by, updated\_at | Grace period, suspension threshold, reconnection fee, GCash policy, cash tolerance (0). |
 | `application_setting_changes` | id, key, old\_value, new\_value, changed\_by, changed\_at | Append-only history of settings. |
 | `backup_history` | id, kind (BACKUP or RESTORE), triggered\_by, started\_at, finished\_at, file\_path, size\_bytes, checksum\_sha256, schema\_version, verification\_status, verified\_at, notes | Restore events are also written to a server log file outside the database. |
-| Sequences | `invoice_no_seq`, `receipt_no_seq`, `reversal_no_seq`, `adjustment_no_seq`, `batch_no_seq` | Plain PostgreSQL sequences, not rows. Account numbers can use sequences too. |
+| Sequences | `invoice_no_seq`, `receipt_no_seq`, `reversal_no_seq`, `adjustment_no_seq`, `batch_no_seq` | Plain PostgreSQL sequences, not rows. |
+| Account number sequences (built in Phase 3) | `subscriber_no_seq`, `service_account_no_seq` | Created `OWNED BY` the `account_no` column, so `migrate:fresh` drops and recreates them with the table. Number = configurable prefix plus six digits (`SUB-000001`, `SVC-000001`). |
 
 ## Subscribers, plans and service accounts
 
@@ -46,14 +47,14 @@ Covers F1. One subscriber owns many service accounts. Rates are snapshotted on t
 
 | Table | Key columns | Notes |
 | --- | --- | --- |
-| `subscribers` | id, account\_no (unique), full\_name, status (ACTIVE, INACTIVE, TERMINATED, ARCHIVED), collection\_area\_id, billing\_due\_day, notes, created\_by, created\_at | Never deleted. Status only. |
-| `subscriber_contacts` | id, subscriber\_id, contact\_type (MOBILE, EMAIL, OTHER), value, is\_primary | Indexed on value for global search. |
-| `subscriber_addresses` | id, subscriber\_id, address\_type (BILLING, SERVICE), line1, barangay, city, landmark, collection\_area\_id | One subscriber may have several service addresses. |
-| `subscriber_documents` | id, subscriber\_id, file\_path, mime\_type, size\_bytes, sha256, uploaded\_by, uploaded\_at | Validated type and size, safe generated path. |
+| `subscribers` | id, account\_no (unique), full\_name, status (ACTIVE, INACTIVE, TERMINATED, ARCHIVED), collection\_area\_id, billing\_due\_day (1 to 31), notes, created\_by, created\_at, updated\_at | Never deleted. Status only; the allowed moves are in the `SubscriberStatus` enum. CHECK constraints on status and due day. Trigram GIN index on `lower(full_name)`. |
+| `subscriber_contacts` | id, subscriber\_id, contact\_type (MOBILE, EMAIL, OTHER), value, is\_primary | Phones are stored as digits only (`+63` becomes `0`), emails lower-cased. Indexed on `value` and on the digits-only expression `regexp_replace(value, '\D', '', 'g')` for search and the duplicate warning. |
+| `subscriber_addresses` | id, subscriber\_id, address\_type (BILLING, SERVICE), line1, barangay, city, landmark, collection\_area\_id | One subscriber may have several service addresses. A service account takes its collection area from its service address. One trigram GIN index over the whole address text. |
+| `subscriber_documents` | id, subscriber\_id, file\_path (unique), original\_name, mime\_type, size\_bytes, sha256, uploaded\_by, uploaded\_at | `original_name` is display only (added in Phase 3). `file_path` is a generated name on the private `documents` disk, which has no URL. Content type judged from the bytes, PDF, JPEG or PNG, 5 MB default. Never deleted. |
 | `service_types` | id, code (INTERNET, CABLE, COMBO), name | Small lookup table. |
 | `service_plans` | id, code (unique), name, service\_type\_id, price\_centavos, installation\_fee\_centavos, speed\_mbps (nullable), channel\_count (nullable), description, is\_active | Internet uses speed, Cable uses channel count. |
-| `service_plan_prices` (optional) | id, plan\_id, price\_centavos, effective\_from | Keeps price history. Changes affect future billing only. |
-| `service_accounts` | id, account\_no (unique), subscriber\_id, plan\_id, service\_address\_id, status (PENDING, ACTIVE, SUSPENDED, TERMINATED), activation\_date, billing\_start\_date, billing\_due\_day, current\_rate\_centavos, assigned\_collector\_id, created\_at | The rate is copied from the plan at creation. Status changes are mirrored in `service_events`. |
+| `service_plan_prices` (not built) | id, plan\_id, price\_centavos, effective\_from | Decided in Phase 3: not needed. The rate copied onto each service account (and later onto each invoice item) is the price history; a plan price change affects new accounts and future billing only. |
+| `service_accounts` | id, account\_no (unique), subscriber\_id, plan\_id, service\_address\_id, status (PENDING, ACTIVE, SUSPENDED, TERMINATED), activation\_date, billing\_start\_date, billing\_due\_day, current\_rate\_centavos, assigned\_collector\_id, created\_by, created\_at, updated\_at | The rate is copied from the plan at creation. Status changes are mirrored in `service_events`. `billing_due_day` is the one billing uses (the subscriber's is only the default). `assigned_collector_id` is the current collector; the dated history is `collector_assignments`. CHECK constraints on status, due day and rate above zero. |
 
 ## Billing and ledger
 
@@ -90,7 +91,7 @@ Covers F5. Collectors are records, not logins (an assumption to confirm).
 | --- | --- | --- |
 | `collectors` | id, code (unique), full\_name, contact\_no, user\_id (nullable), is\_active | `user_id` stays empty unless collectors get a login later. |
 | `collection_areas` | id, code (unique), name, is\_active | Routes such as Poblacion or Riverside. |
-| `collector_assignments` | id, collector\_id, collection\_area\_id (nullable), service\_account\_id (nullable), effective\_from, effective\_to, assigned\_by | Exactly one of area or service account is set. Dated rows keep history. |
+| `collector_assignments` | id, collector\_id, collection\_area\_id (nullable), service\_account\_id (nullable), effective\_from, effective\_to, assigned\_by, created\_at | Exactly one of area or service account is set (CHECK). Dated rows keep history; `effective_to` null means open. A change closes the open row the day before the new one starts and never rewrites anything else. At most one open row per account and per area (partial unique indexes). |
 | `collection_batches` | id, batch\_no (unique), collector\_id, collection\_area\_id, batch\_date, status (OPEN, IN\_PROGRESS, SUBMITTED, REMITTED, RECONCILED, CLOSED), expected\_receivable\_centavos, created\_by, created\_at, submitted\_at, remitted\_at, closed\_by, closed\_at | Server rejects illegal state jumps. |
 | `batch_accounts` | id, batch\_id, service\_account\_id, subscriber\_id, current\_bill\_centavos, arrears\_centavos, total\_due\_centavos, visit\_order, outcome (PENDING, COLLECTED, PARTIAL, UNCOLLECTED), uncollected\_reason | Snapshot at batch creation. Unique on batch plus service account. |
 | `collector_remittances` | id, batch\_id, amount\_centavos, received\_by, remitted\_at, denomination\_breakdown (jsonb), notes | One row per part when a collector remits in pieces. |
@@ -103,7 +104,7 @@ Covers F1 Step 7 and F7. All state changes stay in service history.
 
 | Table | Key columns | Notes |
 | --- | --- | --- |
-| `service_events` | id, service\_account\_id, event\_type (CREATED, ACTIVATED, SUSPENDED, RECONNECTED, TERMINATED, PLAN\_CHANGED, COLLECTOR\_CHANGED), from\_status, to\_status, occurred\_at, actor\_user\_id, reference\_type, reference\_id, notes | Append-only history shown in the Service History tab. |
+| `service_events` | id, service\_account\_id, event\_type (CREATED, ACTIVATED, SUSPENDED, RECONNECTED, TERMINATED, PLAN\_CHANGED, COLLECTOR\_CHANGED), from\_status, to\_status, occurred\_at, actor\_user\_id, reference\_type, reference\_id, notes | Append-only history shown in the Service History tab (trigger, revoked privileges, model guard). `notes` holds the reason typed for the change. The CREATED event has no `from_status`. A status move picks ACTIVATED, SUSPENDED, RECONNECTED or TERMINATED; COLLECTOR\_CHANGED keeps the current status in both columns and points at the assignment. PLAN\_CHANGED is reserved; no Action writes it yet. |
 | `suspension_records` | id, service\_account\_id, status (REQUESTED, APPROVED, EFFECTIVE, CANCELLED), reason, effective\_date, requested\_by, approved\_by, approved\_at, executed\_by, executed\_at, arrears\_snapshot\_centavos, oldest\_invoice\_id, notes | The candidate list is a query, not a table. |
 | `reconnection_records` | id, service\_account\_id, suspension\_id, status (REQUESTED, COMPLETED, CANCELLED), request\_date, completion\_date, technician\_user\_id, fee\_invoice\_id (or adjustment\_id), qualifying\_payment\_id, notes | At most one open record per service account. |
 | `work_orders` (optional) | id, service\_account\_id, order\_type (INSTALL, SUSPEND, RECONNECT), assigned\_to, scheduled\_for, status, notes | Gives technicians a job list with no financial columns. Not required by the document. |
@@ -114,7 +115,9 @@ Each constraint below exists to make an acceptance test pass at the database lev
 
 | Constraint or index | Table | Protects | Test |
 | --- | --- | --- | --- |
-| Unique `account_no` | subscribers, service\_accounts | Duplicate accounts | Minimum constraints |
+| Unique `account_no` | subscribers, service\_accounts | Duplicate accounts | Minimum constraints (`SchemaConstraintsTest`) |
+| Partial unique on `service_account_id` or `collection_area_id` where `effective_to` is null | collector\_assignments | Two open collectors for one account or area | `SchemaConstraintsTest` |
+| Trigger and revoked privileges blocking UPDATE, DELETE and TRUNCATE | service\_events | Rewriting service history (INV-21) | `SchemaConstraintsTest` |
 | Unique `invoice_no` | invoices | Duplicate invoice numbers | AT-09 |
 | Partial unique on (service\_account\_id, billing\_period) where invoice\_type is MONTHLY and status is not VOID | invoices | Duplicate billing for one period | AT-11 |
 | Unique `receipt_no`, unique `payment_id` | receipts | Duplicate receipts, one receipt per payment | AT-09 |
@@ -131,11 +134,11 @@ Each constraint below exists to make an acceptance test pass at the database lev
 
 Indexes the document names or the flows need:
 
-- **Search:** trigram index on subscriber name (`pg_trgm`), index on `account_no`, contact value, address text, `invoice_no`, `receipt_no` and `normalized_reference`.
+- **Search:** trigram index on subscriber name (`pg_trgm`, on `lower(full_name)`), one trigram index on the address text, indexes on `account_no`, contact value and its digits-only form, then `invoice_no`, `receipt_no` and `normalized_reference` when those tables exist. Search code is split into `SearchSource` classes, one per kind of key, so a later phase adds its index and one class and nothing else changes.
 - **Receivables:** `invoices (due_date, status)`, `invoices (subscriber_id, status)`, `payment_allocations (invoice_id)`.
 - **Ledger:** `ledger_entries (subscriber_id, entry_date, id)` for statements and running balances.
 - **Payments and reports:** `payments (payment_date)`, `payments (subscriber_id)`, `payments (batch_account_id)`.
-- **Collections:** `collection_batches (collector_id, status)`, `collector_assignments (collector_id, effective_from)`, `service_accounts (collection area, collector, status)`.
+- **Collections:** `collection_batches (collector_id, status)`, `collector_assignments (collector_id, effective_from)`, `service_accounts (assigned_collector_id, status)`. A service account has no area column; the area is the one on its service address.
 - **Audit:** `audit_logs (occurred_at)`, `audit_logs (entity_type, entity_id)`, `audit_logs (actor_user_id)`.
 
 ## Agreed decisions that change the schema
