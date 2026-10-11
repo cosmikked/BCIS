@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             CollectionSetupSeeder::class,
             ServicePlanSeeder::class,
             DemoSubscriberSeeder::class,
+            DemoBillingSeeder::class,
         ]);
     }
 }

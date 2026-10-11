@@ -36,9 +36,9 @@ use RuntimeException;
  */
 class DemoSubscriberSeeder extends Seeder
 {
-    /** @var list<array{name: string, plan: string, due: int, start: string, final: string}> */
+    /** @var list<array{name: string, plan: string, due: int, start: string, final: string, fee?: string}> */
     private const NAMED = [
-        ['name' => 'Ana Reyes', 'plan' => 'CMB-STD', 'due' => 5, 'start' => '2026-10-01', 'final' => 'PENDING'],
+        ['name' => 'Ana Reyes', 'plan' => 'CMB-STD', 'due' => 5, 'start' => '2026-10-01', 'final' => 'PENDING', 'fee' => '500.00'],
         ['name' => 'Ben Santos', 'plan' => 'INT-20', 'due' => 5, 'start' => '2026-10-01', 'final' => 'ACTIVE'],
         ['name' => 'Carlo Mendoza', 'plan' => 'INT-20', 'due' => 5, 'start' => '2026-07-01', 'final' => 'SUSPENDED'],
         ['name' => 'Dina Flores', 'plan' => 'CAB-PLUS', 'due' => 10, 'start' => '2026-04-01', 'final' => 'SUSPENDED'],
@@ -127,6 +127,8 @@ class DemoSubscriberSeeder extends Seeder
                     'billing_start_date' => $person['start'],
                     'billing_due_day' => $person['due'],
                     'collector_id' => $collectors[$collectorCode],
+                    // Only the named people with a fee (Ana Reyes) carry one, on their first account.
+                    'installation_fee' => $n === 0 ? ($person['fee'] ?? null) : null,
                 ]);
                 $accountCount++;
 
@@ -174,7 +176,7 @@ class DemoSubscriberSeeder extends Seeder
     /**
      * The 7 named people followed by 43 generated ones (50 in all).
      *
-     * @return list<array{name: string, plan: string, due: int, start: string, final: string, street: string}>
+     * @return list<array{name: string, plan: string, due: int, start: string, final: string, street: string, fee?: string}>
      */
     private function people(): array
     {
