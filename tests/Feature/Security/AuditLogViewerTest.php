@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Domain\Billing\Actions\ApproveAdjustment;
+use App\Domain\Billing\Actions\CreateAdjustment;
+use App\Domain\Billing\Actions\CreateOneOffInvoice;
+use App\Domain\Billing\Actions\DiscardDraftInvoices;
+use App\Domain\Billing\Actions\FinalizeBillingCycle;
+use App\Domain\Billing\Actions\GenerateBillingCycle;
+use App\Domain\Billing\Actions\RejectAdjustment;
+use App\Domain\Billing\Enums\AdjustmentKind;
+use App\Domain\Billing\Enums\InvoiceItemType;
 use App\Domain\Security\Actions\AttemptLogin;
 use App\Domain\Security\Actions\ChangeOwnPassword;
 use App\Domain\Security\Actions\CreateUser;
@@ -29,6 +38,7 @@ use App\Domain\Subscribers\Enums\SubscriberStatus;
 use App\Livewire\Admin\AuditLogViewer;
 use App\Models\AuditLog;
 use App\Models\Collector;
+use App\Models\Invoice;
 use App\Models\Role;
 use App\Models\ServicePlan;
 use Database\Seeders\RolePermissionSeeder;
@@ -227,6 +237,27 @@ it('records every kind of security event and the viewer can show each one (FR-SE
     $account = SubscriberData::account($owner, $subscriber, $plan);
     app(ChangeServiceStatus::class)->handle($owner, $account->id, ServiceStatus::Active, 'Installed');
     app(AssignCollector::class)->forServiceAccount($owner, $account->id, Collector::factory()->create()->id);
+
+    // Billing (Phase 4). The clock is fixed so October 2026 is a month that may be billed.
+    $this->travelTo('2026-10-09 09:00:00');
+    $cycle = app(GenerateBillingCycle::class)->handle($owner, '2026-10')->cycle;
+    app(DiscardDraftInvoices::class)->handle($owner, $cycle->id, 'Check the preview first');
+    app(GenerateBillingCycle::class)->handle($owner, '2026-10');
+    app(FinalizeBillingCycle::class)->handle($owner, $cycle->id);
+
+    // Corrections: a different user approves or rejects, and a void is the VOID kind.
+    $admin = Users::make('admin', RoleCode::Administrator);
+    $monthly = Invoice::query()->firstOrFail();
+    $oneOff = app(CreateOneOffInvoice::class)->handle($owner, $account->id, [
+        ['type' => InvoiceItemType::Reconnection, 'description' => 'Reconnection fee', 'amount' => '500.00'],
+    ], 'Reconnected');
+    $credit = app(CreateAdjustment::class)->handle($admin, $monthly->id, AdjustmentKind::Credit, '1.00', 'Promo not applied');
+    app(ApproveAdjustment::class)->handle($owner, $credit->id);
+    $declined = app(CreateAdjustment::class)->handle($admin, $monthly->id, AdjustmentKind::Credit, '1.00', 'Asked by phone');
+    app(RejectAdjustment::class)->handle($owner, $declined->id, 'No evidence');
+    $void = app(CreateAdjustment::class)->handle($admin, $oneOff->id, AdjustmentKind::Void, null, 'Charged by mistake');
+    app(ApproveAdjustment::class)->handle($owner, $void->id);
+
     app(ChangeSubscriberStatus::class)->handle($owner, $subscriber->id, SubscriberStatus::Inactive, 'Paused');
     Storage::fake('documents');
     app(UploadSubscriberDocument::class)->handle($owner, $subscriber->id, UploadedFile::fake()->createWithContent('id.pdf', "%PDF-1.4\n%%EOF\n"));

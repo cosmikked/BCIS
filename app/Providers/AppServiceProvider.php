@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domain\Billing\Contracts\AllocationTotals;
+use App\Domain\Billing\Contracts\CustomerCreditApplier;
+use App\Domain\Billing\InvoiceNumberSource;
+use App\Domain\Billing\NullAllocationTotals;
+use App\Domain\Billing\NullCustomerCreditApplier;
 use App\Domain\Security\Permission;
 use App\Domain\Security\SettingsRepository;
 use App\Domain\Subscribers\Search\GlobalSearch;
@@ -30,11 +35,17 @@ class AppServiceProvider extends ServiceProvider
         // One settings read per key per request (FR-SEC-013).
         $this->app->scoped(SettingsRepository::class);
 
+        // Phase 5 rebinds these two to the real payment-based implementations
+        // (FR-BIL-012, INV-06). Until payments exist both do nothing.
+        $this->app->bind(AllocationTotals::class, NullAllocationTotals::class);
+        $this->app->bind(CustomerCreditApplier::class, NullCustomerCreditApplier::class);
+
         // Global search (FR-SUB-003). Each phase that adds a searchable thing
         // (invoice number, receipt number, GCash reference) adds one
         // SearchSource class to this list; GlobalSearch itself does not change.
         $this->app->tag([
             AccountNumberSource::class,
+            InvoiceNumberSource::class,
             NameSource::class,
             ContactSource::class,
             AddressSource::class,

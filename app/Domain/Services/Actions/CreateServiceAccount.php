@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Services\Actions;
 
+use App\Domain\Money\Money;
 use App\Domain\Security\AuditAction;
 use App\Domain\Security\AuditLogger;
 use App\Domain\Services\Enums\ServiceEventType;
@@ -44,7 +45,8 @@ final class CreateServiceAccount
 
     /**
      * @param  array<string, mixed>  $input  subscriber_id, plan_id, service_address_id, billing_start_date,
-     *                                       optional billing_due_day (defaults to the subscriber's) and collector_id
+     *                                       optional billing_due_day (defaults to the subscriber's), collector_id
+     *                                       and installation_fee (pesos, billed once on the first invoice)
      *
      * @throws ValidationException
      */
@@ -59,19 +61,29 @@ final class CreateServiceAccount
             'billing_start_date' => ['required', 'date_format:Y-m-d'],
             'billing_due_day' => ['nullable', 'integer', 'between:1,31'],
             'collector_id' => ['nullable', 'integer'],
-        ], [], [
+            // Pesos as typed, for example "500" or "500.00". Whole pesos or two decimals at most.
+            'installation_fee' => ['nullable', 'regex:/^\d{1,9}(\.\d{1,2})?$/'],
+        ], [
+            'installation_fee.regex' => 'Enter the installation fee in pesos, for example 500 or 500.00.',
+        ], [
             'plan_id' => 'plan',
             'service_address_id' => 'service address',
             'billing_start_date' => 'billing start date',
             'billing_due_day' => 'billing due day',
+            'installation_fee' => 'installation fee',
         ])->validate();
 
         // A blank form field arrives as '', which must mean "not given", never id or day 0.
         $dueDay = $this->intOrNull($data['billing_due_day'] ?? null);
         $collectorId = $this->intOrNull($data['collector_id'] ?? null);
+        // FR-BIL-006, PRD 19 #6: a one-time fee billed on the account's first invoice.
+        // Not given means no fee; it is a snapshot here, not read from the plan later.
+        $installationFee = trim((string) ($data['installation_fee'] ?? '')) === ''
+            ? Money::zero()
+            : Money::fromPesos((string) $data['installation_fee']);
 
         try {
-            return DB::transaction(function () use ($actor, $data, $dueDay, $collectorId): ServiceAccount {
+            return DB::transaction(function () use ($actor, $data, $dueDay, $collectorId, $installationFee): ServiceAccount {
                 $subscriber = Subscriber::query()->whereKey((int) $data['subscriber_id'])->lockForUpdate()->firstOrFail();
 
                 if ($subscriber->status !== SubscriberStatus::Active) {
@@ -102,6 +114,7 @@ final class CreateServiceAccount
                     'billing_due_day' => $dueDay ?? $subscriber->billing_due_day,
                     // INV-20: the rate is a copy, not a reference to the plan.
                     'current_rate_centavos' => $plan->price_centavos,
+                    'installation_fee_centavos' => $installationFee,
                     'created_by' => $actor->id,
                 ]);
 
@@ -122,6 +135,7 @@ final class CreateServiceAccount
                         'service_address_id' => $address->id,
                         'status' => ServiceStatus::Pending->value,
                         'current_rate_centavos' => $plan->price_centavos->centavos,
+                        'installation_fee_centavos' => $installationFee->centavos,
                         'billing_start_date' => $account->billing_start_date->toDateString(),
                         'billing_due_day' => $account->billing_due_day,
                     ],

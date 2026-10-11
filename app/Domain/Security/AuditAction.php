@@ -39,4 +39,12 @@ enum AuditAction: string
     case ServiceStatusChanged = 'service_account.status_changed';
     case CollectorAssigned = 'collector.assigned';
     case SubscriberDocumentUploaded = 'subscriber.document_uploaded';
+    case BillingCycleGenerated = 'billing_cycle.generated';
+    case BillingDraftsDiscarded = 'billing_cycle.drafts_discarded';
+    case BillingCycleFinalized = 'billing_cycle.finalized';
+    case OneOffInvoiceCreated = 'invoice.one_off_created';
+    case AdjustmentRequested = 'adjustment.requested';
+    case AdjustmentApproved = 'adjustment.approved';
+    case AdjustmentRejected = 'adjustment.rejected';
+    case InvoiceVoided = 'invoice.voided';
 }
