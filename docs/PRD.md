@@ -589,12 +589,12 @@ Seeders use synthetic data only. Demo passwords come from the environment (`SEED
 
 | Subscriber | Scenario |
 | --- | --- |
-| Ana Reyes | New Combo subscriber, first invoice ₱1,999.00 with installation fee, paid exactly in cash. |
-| Ben Santos | October and November invoices ₱999.00, GCash payment of ₱1,200.00 verified (oldest-first, ₱798.00 remains). |
-| Carlo Mendoza | Three unpaid invoices (72, 42 and 11 days past due), suspended, then paid ₱3,297.00 and reconnected with a ₱300.00 fee. |
-| Dina Flores | Six unpaid invoices ₱1,000.00 each, spanning every bucket, suspended and stays suspended. |
+| Ana Reyes | New Combo subscriber, first invoice (October 2026, due Oct 5) ₱1,999.00 = ₱1,499.00 Combo + ₱500.00 installation fee, paid exactly in cash. |
+| Ben Santos | August, September and October 2026 invoices ₱999.00 each, GCash payment of ₱1,200.00 verified (oldest-first: August paid, ₱798.00 remains on September). |
+| Carlo Mendoza | Three unpaid invoices (August, September and October 2026, ₱999.00 each; days past due depend on the demo date), suspended, then paid ₱3,297.00 and reconnected with a ₱300.00 fee. |
+| Dina Flores | Unpaid invoices ₱1,000.00 each (Phase 4 seeds August to October; Phase 7 adds older months so they span every bucket), suspended and stays suspended. |
 | Elena Cruz and Elaine Cruz | ₱1,499.00 cash payment posted to the wrong subscriber, reversed and re-posted. |
-| Gil Ramos | One October invoice ₱799.00, 37 days past due. |
+| Gil Ramos | Unpaid invoices ₱799.00 (August to October 2026); the 37-days-past-due case is set by the Phase 7 aging seed, since days past due depend on the demo date. |
 | Rico's batch | 40 accounts, expected ₱48,960.00, cash ₱20,000.00 remitted in full. |
 | Mila's batch | Cash ₱20,000.00 collected, ₱19,500.00 remitted, ₱500.00 shortage recorded. |
 | GCash queue | One pending, one verified, one rejected and one duplicate-reference attempt. |
