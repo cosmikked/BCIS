@@ -58,6 +58,11 @@ return [
         'security.max_login_attempts' => 5,   // FR-SEC-002
         'security.lockout_minutes' => 15,     // FR-SEC-002
         'security.idle_lock_minutes' => 15,   // FR-SEC-003
+        // PRD 19 sets no grace period, so the neutral default is flagged in the
+        // commit: an invoice is overdue the day after its due date. Phase 7
+        // (FR-SVC-001) is where the Owner is expected to tune it.
+        'billing.grace_days' => 0,            // FR-BIL-008
+        'billing.penalty_enabled' => 0,       // FR-BIL-011, PRD 19 #4: off by default
     ],
 
     /*
@@ -69,6 +74,8 @@ return [
         'security.max_login_attempts' => ['label' => 'Failed sign-ins before lockout', 'unit' => 'attempts', 'min' => 3, 'max' => 20],
         'security.lockout_minutes' => ['label' => 'Lockout length', 'unit' => 'minutes', 'min' => 1, 'max' => 1440],
         'security.idle_lock_minutes' => ['label' => 'Idle time before the screen locks', 'unit' => 'minutes', 'min' => 1, 'max' => 480],
+        'billing.grace_days' => ['label' => 'Grace period after the due date', 'unit' => 'days', 'min' => 0, 'max' => 60],
+        'billing.penalty_enabled' => ['label' => 'Charge a penalty on overdue accounts (1 = on, 0 = off)', 'unit' => '', 'min' => 0, 'max' => 1],
     ],
 
     // Password rules for users choosing their own password (PRD 19 has no rule,
@@ -90,6 +97,23 @@ return [
     'account_numbers' => [
         'subscriber_prefix' => env('SUBSCRIBER_NO_PREFIX', 'SUB-'),
         'service_prefix' => env('SERVICE_ACCOUNT_NO_PREFIX', 'SVC-'),
+        'digits' => 6,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Billing document numbers (FR-BIL-013, INV-10)
+    |--------------------------------------------------------------------------
+    |
+    | Same scheme as account numbers: prefix plus a zero-padded PostgreSQL
+    | sequence value, for example INV-000001 (PRD section 19 #11). Prefixes are
+    | configurable here (or in .env).
+    |
+    */
+
+    'document_numbers' => [
+        'invoice_prefix' => env('INVOICE_NO_PREFIX', 'INV-'),
+        'adjustment_prefix' => env('ADJUSTMENT_NO_PREFIX', 'ADJ-'),
         'digits' => 6,
     ],
 

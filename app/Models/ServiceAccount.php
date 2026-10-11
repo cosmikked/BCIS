@@ -29,6 +29,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon $billing_start_date
  * @property int $billing_due_day
  * @property Money $current_rate_centavos
+ * @property Money $installation_fee_centavos
+ * @property Carbon|null $installation_fee_billed_at
  * @property int|null $assigned_collector_id
  * @property int $created_by
  * @property Carbon $created_at
@@ -52,6 +54,8 @@ class ServiceAccount extends Model
             'activation_date' => 'date',
             'billing_start_date' => 'date',
             'current_rate_centavos' => MoneyCast::class,
+            'installation_fee_centavos' => MoneyCast::class,
+            'installation_fee_billed_at' => 'datetime',
         ];
     }
 
