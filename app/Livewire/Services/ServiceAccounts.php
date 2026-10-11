@@ -94,6 +94,9 @@ class ServiceAccounts extends Component
 
     public string $newCollectorId = '';
 
+    /** Pesos as typed; billed once on the account's first invoice (PRD 19 #6). */
+    public string $installationFee = '';
+
     // Side panel.
     public string $statusTo = '';
 
@@ -155,7 +158,7 @@ class ServiceAccounts extends Component
 
         $this->creating = false;
         $this->new = false;
-        $this->reset(['newSubscriberId', 'planId', 'serviceAddressId', 'billingDueDay', 'newCollectorId', 'subscriberLookup']);
+        $this->reset(['newSubscriberId', 'planId', 'serviceAddressId', 'billingDueDay', 'newCollectorId', 'subscriberLookup', 'installationFee']);
         $this->resetErrorBag();
     }
 
@@ -184,12 +187,13 @@ class ServiceAccounts extends Component
             'billing_start_date' => $this->billingStartDate,
             'billing_due_day' => $this->billingDueDay,
             'collector_id' => $this->newCollectorId,
+            'installation_fee' => $this->installationFee,
         ]);
 
         $this->creating = false;
         $this->selectedId = $account->id;
         $this->message = "Service account {$account->account_no} created. It stays Pending until it is activated.";
-        $this->reset(['newSubscriberId', 'planId', 'serviceAddressId', 'billingStartDate', 'billingDueDay', 'newCollectorId', 'subscriberLookup']);
+        $this->reset(['newSubscriberId', 'planId', 'serviceAddressId', 'billingStartDate', 'billingDueDay', 'newCollectorId', 'subscriberLookup', 'installationFee']);
         $this->resetErrorBag();
     }
 
@@ -273,7 +277,7 @@ class ServiceAccounts extends Component
     {
         $this->creating = true;
         $this->selectedId = null;
-        $this->reset(['planId', 'serviceAddressId', 'billingDueDay', 'newCollectorId', 'subscriberLookup', 'message']);
+        $this->reset(['planId', 'serviceAddressId', 'billingDueDay', 'newCollectorId', 'subscriberLookup', 'message', 'installationFee']);
         $this->newSubscriberId = '';
         $this->billingStartDate = now()->toDateString();
 

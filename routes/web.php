@@ -10,6 +10,11 @@ use App\Livewire\Admin\AuditLogViewer;
 use App\Livewire\Admin\Roles;
 use App\Livewire\Admin\Settings;
 use App\Livewire\Admin\Users;
+use App\Livewire\Billing\Adjustments;
+use App\Livewire\Billing\CurrentBilling;
+use App\Livewire\Billing\GenerateBilling;
+use App\Livewire\Billing\InvoiceDetail;
+use App\Livewire\Billing\Invoices;
 use App\Livewire\Security\ChangePassword;
 use App\Livewire\Security\Login;
 use App\Livewire\Services\Plans;
@@ -71,6 +76,23 @@ Route::middleware(['auth', 'permission:subscriber.manage'])->group(function (): 
     Route::get('/subscribers/new', SubscriberForm::class)->name('subscribers.create');
     Route::get('/subscribers/{subscriber}/edit', SubscriberForm::class)->whereNumber('subscriber')->name('subscribers.edit');
 });
+
+/*
+|--------------------------------------------------------------------------
+| BILLING (Phase 4)
+|--------------------------------------------------------------------------
+| Viewing cycles and invoices needs billing.view. Generating, discarding and
+| finalizing a month needs billing.generate. Adjustments and voids are checked
+| per kind (invoice.adjust, invoice.void) inside the Action as well.
+*/
+Route::middleware(['auth', 'permission:billing.view'])->group(function (): void {
+    Route::get('/billing', CurrentBilling::class)->name('billing.current');
+    Route::get('/billing/invoices', Invoices::class)->name('billing.invoices');
+    Route::get('/billing/invoices/{invoice}', InvoiceDetail::class)->whereNumber('invoice')->name('billing.invoices.show');
+});
+// Requests are decided by a different user; each kind is checked again per request (invoice.adjust / invoice.void).
+Route::middleware(['auth', 'permission:invoice.adjust'])->get('/billing/adjustments', Adjustments::class)->name('billing.adjustments');
+Route::middleware(['auth', 'permission:billing.generate'])->get('/billing/generate', GenerateBilling::class)->name('billing.generate');
 
 /*
 |--------------------------------------------------------------------------

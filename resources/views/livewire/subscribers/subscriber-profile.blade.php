@@ -208,13 +208,132 @@
             </section>
             @break
 
+        @case('billing')
+            <section class="space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                    <h3 class="text-base font-semibold text-ink">Invoices</h3>
+                    <a href="{{ route('billing.invoices', ['subscriber' => $subscriber->id]) }}" wire:navigate class="text-sm underline">Open in Invoices</a>
+                </div>
+
+                @if ($invoicePage['rows']->isEmpty())
+                    <x-ui.empty-state title="No invoices yet" message="Invoices appear here once a billing month is finalized for this subscriber's active service accounts." />
+                @else
+                    <div class="overflow-x-auto rounded-md border border-line bg-surface">
+                        <table class="w-full text-left text-sm">
+                            <thead class="border-b border-line bg-canvas text-xs uppercase tracking-wide text-muted">
+                                <tr>
+                                    <th scope="col" class="px-4 py-2">Invoice no.</th>
+                                    <th scope="col" class="px-4 py-2">Account</th>
+                                    <th scope="col" class="px-4 py-2">Period</th>
+                                    <th scope="col" class="px-4 py-2">Due</th>
+                                    <th scope="col" class="px-4 py-2 text-right">Total</th>
+                                    <th scope="col" class="px-4 py-2 text-right">Balance</th>
+                                    <th scope="col" class="px-4 py-2">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-line">
+                                @foreach ($invoicePage['rows'] as $row)
+                                    @php
+                                        $invoice = $row->invoice;
+                                    @endphp
+                                    <tr wire:key="inv-{{ $invoice->id }}">
+                                        <td class="whitespace-nowrap px-4 py-2 font-medium text-ink"><a href="{{ route('billing.invoices.show', $invoice->id) }}" wire:navigate class="underline-offset-2 hover:underline">{{ $invoice->invoice_no ?? 'Draft' }}</a></td>
+                                        <td class="px-4 py-2 text-muted">{{ $invoice->serviceAccount->account_no }}</td>
+                                        <td class="whitespace-nowrap px-4 py-2">{{ $invoice->billing_period?->format('M Y') ?? 'One-off' }}</td>
+                                        <td class="whitespace-nowrap px-4 py-2">{{ $invoice->due_date->format('M j, Y') }}</td>
+                                        <td class="money px-4 py-2 text-right">{{ $invoice->total_centavos->format() }}</td>
+                                        <td class="money px-4 py-2 text-right">{{ $invoice->status->isFinalized() ? $row->balance->format() : '-' }}</td>
+                                        <td class="px-4 py-2"><x-ui.status-badge :status="$row->overdue ? 'OVERDUE' : $invoice->status" /></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    {{ $invoicePage['paginator']->links() }}
+                @endif
+            </section>
+            @break
+
+        @case('ledger')
+            <section class="space-y-3">
+                <div class="flex flex-wrap items-end justify-between gap-3">
+                    <h3 class="text-base font-semibold text-ink">Ledger</h3>
+                    <p class="text-sm">Owed now: <span class="money text-base font-semibold text-ink">{{ $ledger['balance']->format() }}</span></p>
+                </div>
+
+                <div class="flex flex-wrap items-end gap-3 rounded-md border border-line bg-surface p-4">
+                    <div>
+                        <label for="ledgerFrom" class="label">From</label>
+                        <input id="ledgerFrom" type="date" wire:model.live="ledgerFrom" class="field">
+                    </div>
+                    <div>
+                        <label for="ledgerTo" class="label">To</label>
+                        <input id="ledgerTo" type="date" wire:model.live="ledgerTo" class="field">
+                    </div>
+                    <button type="button" wire:click="clearLedgerFilter" class="btn btn-secondary btn-sm">Clear dates</button>
+                    @if ($ledger['filterError'])
+                        <p role="alert" class="text-sm text-danger">Enter valid dates, with From not after To. Showing the whole ledger.</p>
+                    @endif
+                </div>
+
+                @if ($ledger['statement']->totalRows === 0 && $ledger['statement']->openingBalance->isZero())
+                    <x-ui.empty-state title="No ledger entries yet" message="Every invoice, payment and correction is recorded here and never edited or deleted." />
+                @else
+                    <div class="overflow-x-auto rounded-md border border-line bg-surface">
+                        <table class="w-full text-left text-sm">
+                            <thead class="border-b border-line bg-canvas text-xs uppercase tracking-wide text-muted">
+                                <tr>
+                                    <th scope="col" class="px-4 py-2">Date</th>
+                                    <th scope="col" class="px-4 py-2">Type</th>
+                                    <th scope="col" class="px-4 py-2">Description</th>
+                                    <th scope="col" class="px-4 py-2 text-right">Debit</th>
+                                    <th scope="col" class="px-4 py-2 text-right">Credit</th>
+                                    <th scope="col" class="px-4 py-2 text-right">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-line">
+                                @if ($ledger['statement']->openingBalance->isZero() === false)
+                                    <tr class="bg-canvas">
+                                        <td colspan="5" class="px-4 py-2 text-muted">Balance before {{ \Carbon\CarbonImmutable::parse($ledgerFrom)->format('M j, Y') }}</td>
+                                        <td class="money px-4 py-2 text-right">{{ $ledger['statement']->openingBalance->format() }}</td>
+                                    </tr>
+                                @endif
+                                @foreach ($ledger['statement']->rows as $entry)
+                                    <tr wire:key="ledger-{{ $entry->id }}">
+                                        <td class="whitespace-nowrap px-4 py-2">{{ $entry->entryDate->format('M j, Y') }}</td>
+                                        <td class="px-4 py-2 text-muted">{{ $entry->type->label() }}</td>
+                                        <td class="px-4 py-2">
+                                            @if ($entry->referenceType === 'invoice' && $entry->referenceId)
+                                                <a href="{{ route('billing.invoices.show', $entry->referenceId) }}" wire:navigate class="underline-offset-2 hover:underline">{{ $entry->description }}</a>
+                                            @else
+                                                {{ $entry->description }}
+                                            @endif
+                                        </td>
+                                        <td class="money px-4 py-2 text-right">{{ $entry->debit->isPositive() ? $entry->debit->format() : '' }}</td>
+                                        <td class="money px-4 py-2 text-right">{{ $entry->credit->isPositive() ? $entry->credit->format() : '' }}</td>
+                                        <td class="money px-4 py-2 text-right font-medium text-ink">{{ $entry->runningBalance->format() }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot class="border-t border-line">
+                                <tr>
+                                    <th scope="row" colspan="5" class="px-4 py-2 text-right font-medium text-muted">Balance at the end of this range</th>
+                                    <td class="money px-4 py-2 text-right font-semibold text-ink">{{ $ledger['statement']->closingBalance->format() }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {{ $ledger['paginator']->links() }}
+                    <p class="text-xs text-muted">A positive balance is what the subscriber owes. Entries are never edited or deleted; a mistake is corrected by a new entry.</p>
+                @endif
+            </section>
+            @break
+
         @default
-            {{-- Billing, payments, ledger, collection and audit: filled in by their phases (FR-UI-002). --}}
+            {{-- Payments, collection and audit: filled in by their phases (FR-UI-002). --}}
             @php
                 $later = [
-                    'billing' => ['No invoices yet', 'Invoices appear here once monthly billing is built.'],
                     'payments' => ['No payments yet', 'Posted payments and receipts appear here once payments are built.'],
-                    'ledger' => ['Ledger not available yet', 'The permanent running-balance ledger arrives with billing and payments.'],
                     'collection' => ['No collection activity yet', 'Collector batches and remittances appear here once collections are built.'],
                     'audit' => ['Audit trail not shown here yet', 'A per-subscriber audit trail arrives in a later phase. The full Audit Log is under Administration.'],
                 ];

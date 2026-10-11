@@ -149,6 +149,27 @@ describe('Service accounts', function (): void {
         $component->assertSet('selectedId', $account->id)->assertSet('creating', false);
     });
 
+    it('takes an optional installation fee on the create form (PRD 19 #6)', function (): void {
+        $subscriber = SubscriberData::subscriber($this->admin);
+        $plan = ServicePlan::factory()->create(['price_centavos' => Money::fromCentavos(149900)]);
+
+        $component = Livewire::actingAs($this->admin)->test(ServiceAccounts::class)
+            ->call('startCreate')->call('chooseSubscriber', $subscriber->id)
+            ->set('planId', (string) $plan->id)
+            ->set('serviceAddressId', (string) $subscriber->addresses()->first()->id)
+            ->set('billingStartDate', '2026-10-01')
+            ->set('installationFee', '5OO');
+
+        $component->call('create')->assertHasErrors(['installation_fee']);
+        expect(ServiceAccount::query()->count())->toBe(0);
+
+        $component->set('installationFee', '500.00')->call('create')->assertHasNoErrors()->assertSet('installationFee', '');
+
+        $account = ServiceAccount::query()->sole();
+        expect($account->installation_fee_centavos->centavos)->toBe(50000)
+            ->and($account->installation_fee_billed_at)->toBeNull();
+    });
+
     it('shows the Action\'s errors on the create form and creates nothing', function (): void {
         $subscriber = SubscriberData::subscriber($this->admin);
 

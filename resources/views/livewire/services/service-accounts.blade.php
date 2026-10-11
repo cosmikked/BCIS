@@ -166,6 +166,12 @@
                                 @error('billing_due_day') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                             </div>
                         </div>
+                        <div>
+                            <label for="installationFee" class="label">Installation fee (pesos)</label>
+                            <input id="installationFee" type="text" inputmode="decimal" wire:model="installationFee" placeholder="0.00" class="field">
+                            @error('installation_fee') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
+                            <p class="mt-1 text-xs text-muted">Optional. Billed once, on this account's first monthly invoice.</p>
+                        </div>
                         @if ($canAssign)
                             <div>
                                 <label for="newCollectorId" class="label">Collector</label>

@@ -4,13 +4,26 @@ declare(strict_types=1);
 
 namespace App\Livewire\Subscribers;
 
+use App\Domain\Billing\InvoiceFilters;
+use App\Domain\Billing\InvoiceListQuery;
+use App\Domain\Billing\InvoiceRow;
+use App\Domain\Billing\InvoiceRows;
+use App\Domain\Billing\LedgerQuery;
+use App\Domain\Billing\LedgerRow;
+use App\Domain\Billing\LedgerStatement;
+use App\Domain\Money\Money;
 use App\Domain\Services\ServiceHistoryQuery;
 use App\Domain\Subscribers\Actions\ChangeSubscriberStatus;
 use App\Domain\Subscribers\Actions\UploadSubscriberDocument;
 use App\Domain\Subscribers\Enums\SubscriberStatus;
+use App\Models\Invoice;
 use App\Models\Subscriber;
 use App\Models\User;
+use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
@@ -33,6 +46,8 @@ class SubscriberProfile extends Component
     use AuthorizesRequests;
     use WithFileUploads;
     use WithPagination;
+
+    private const LEDGER_PER_PAGE = 25;
 
     /**
      * tab key => [label, permission]. The permission is what the later phase's
@@ -63,6 +78,11 @@ class SubscriberProfile extends Component
 
     public string $reason = '';
 
+    /** Ledger tab date range (Y-m-d). Bad input is ignored, never passed to the query. */
+    public string $ledgerFrom = '';
+
+    public string $ledgerTo = '';
+
     /** The file chosen in the Documents tab; UploadSubscriberDocument judges its content. */
     public ?TemporaryUploadedFile $upload = null;
 
@@ -84,6 +104,30 @@ class SubscriberProfile extends Component
 
         $this->tab = $tab;
         $this->resetPage();
+        $this->resetPage('invoicesPage');
+        $this->resetPage('ledgerPage');
+    }
+
+    public function updatedLedgerFrom(): void
+    {
+        $this->authorize('receivable.view');
+
+        $this->resetPage('ledgerPage');
+    }
+
+    public function updatedLedgerTo(): void
+    {
+        $this->authorize('receivable.view');
+
+        $this->resetPage('ledgerPage');
+    }
+
+    public function clearLedgerFilter(): void
+    {
+        $this->authorize('receivable.view');
+
+        $this->reset(['ledgerFrom', 'ledgerTo']);
+        $this->resetPage('ledgerPage');
     }
 
     public function changeStatus(ChangeSubscriberStatus $changeStatus): void
@@ -167,7 +211,60 @@ class SubscriberProfile extends Component
             'documents' => $tab === 'documents'
                 ? $subscriber->documents()->with('uploader')->orderByDesc('uploaded_at')->orderByDesc('id')->get()
                 : collect(),
+            'invoicePage' => $tab === 'billing' ? $this->invoicePage($actor, $subscriber->id) : null,
+            'ledger' => $tab === 'ledger' ? $this->ledgerPage($subscriber->id) : null,
         ])->title($subscriber->full_name);
+    }
+
+    /** @return array{paginator: Paginator<int, Invoice>, rows: Collection<int, InvoiceRow>} */
+    private function invoicePage(User $actor, int $subscriberId): array
+    {
+        $paginator = app(InvoiceListQuery::class)
+            ->build($actor, new InvoiceFilters(subscriberId: $subscriberId))
+            ->simplePaginate(10, pageName: 'invoicesPage');
+
+        return ['paginator' => $paginator, 'rows' => app(InvoiceRows::class)->for($paginator->getCollection())];
+    }
+
+    /**
+     * The ledger tab: the running balance comes from LedgerQuery, computed over the
+     * whole ledger and then cut to the dates, so a filter never changes a balance.
+     *
+     * @return array{statement: LedgerStatement, paginator: LengthAwarePaginator<int, LedgerRow>, balance: Money, filterError: bool}
+     */
+    private function ledgerPage(int $subscriberId): array
+    {
+        $from = $this->parseDate($this->ledgerFrom);
+        $to = $this->parseDate($this->ledgerTo);
+        $filterError = ($this->ledgerFrom !== '' && $from === null) || ($this->ledgerTo !== '' && $to === null)
+            || ($from !== null && $to !== null && $from->greaterThan($to));
+
+        if ($filterError) {
+            [$from, $to] = [null, null];
+        }
+
+        $query = app(LedgerQuery::class);
+        $page = max(1, LengthAwarePaginator::resolveCurrentPage('ledgerPage'));
+        $statement = $query->statement($subscriberId, $from, $to, self::LEDGER_PER_PAGE, $page);
+
+        return [
+            'statement' => $statement,
+            'paginator' => new LengthAwarePaginator($statement->rows, $statement->totalRows, self::LEDGER_PER_PAGE, $page, [
+                'path' => LengthAwarePaginator::resolveCurrentPath(),
+                'pageName' => 'ledgerPage',
+            ]),
+            'balance' => $query->currentBalance($subscriberId),
+            'filterError' => $filterError,
+        ];
+    }
+
+    private function parseDate(string $value): ?CarbonImmutable
+    {
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $m) !== 1 || ! checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
+            return null;
+        }
+
+        return CarbonImmutable::parse($value)->startOfDay();
     }
 
     private function limitLabel(int $kb): string

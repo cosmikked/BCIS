@@ -255,7 +255,7 @@ describe('Subscriber profile', function (): void {
         $owner = Users::make('owner', RoleCode::Owner);
         $expected = [
             'overview' => 'Details', 'services' => 'No service accounts yet', 'billing' => 'No invoices yet',
-            'payments' => 'No payments yet', 'ledger' => 'Ledger not available yet', 'collection' => 'No collection activity yet',
+            'payments' => 'No payments yet', 'ledger' => 'No ledger entries yet', 'collection' => 'No collection activity yet',
             'history' => 'No service events', 'documents' => 'No documents on file', 'audit' => 'Audit trail not shown here yet',
         ];
 

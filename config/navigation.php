@@ -29,9 +29,10 @@ return [
         ['label' => 'Plans', 'route' => 'plans.index', 'permission' => 'subscriber.view'],
     ]],
     ['label' => 'Billing', 'children' => [
-        ['label' => 'Current Billing', 'permission' => 'billing.view'],
-        ['label' => 'Generate Billing', 'permission' => 'billing.generate'],
-        ['label' => 'Invoices', 'permission' => 'billing.view'],
+        ['label' => 'Current Billing', 'route' => 'billing.current', 'permission' => 'billing.view'],
+        ['label' => 'Generate Billing', 'route' => 'billing.generate', 'permission' => 'billing.generate'],
+        ['label' => 'Invoices', 'route' => 'billing.invoices', 'permission' => 'billing.view'],
+        ['label' => 'Adjustments', 'route' => 'billing.adjustments', 'permission' => 'invoice.adjust'],
     ]],
     ['label' => 'Payments', 'children' => [
         ['label' => 'Receive Payment', 'permission' => 'payment.create'],
